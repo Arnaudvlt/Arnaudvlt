@@ -1,0 +1,1031 @@
+<title>Carnet de la semaine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ---------- jetons ---------- */
+:root{
+  --papier:#F5F7FC;
+  --surface:#FFFFFF;
+  --carreau:#E8EDF8;
+  --encre:#16223D;
+  --encre-2:#59637E;
+  --encre-3:#949DB4;
+  --bleu:#2F4FCB;
+  --bleu-doux:#E8ECFD;
+  --rouge:#C8102E;
+  --rouge-filet:#E9A8B3;
+  --rouge-doux:#FBE9EC;
+  --vert:#1F7A55;
+  --filet:#E1E6F1;
+  --ombre:0 1px 2px rgba(22,34,61,.05), 0 8px 24px -12px rgba(22,34,61,.18);
+  --marge:2.4rem;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --papier:#0F141E;
+    --surface:#161D2A;
+    --carreau:#1B2434;
+    --encre:#E7EBF5;
+    --encre-2:#A2ACC2;
+    --encre-3:#6D7891;
+    --bleu:#8CA5FF;
+    --bleu-doux:#1B2540;
+    --rouge:#FF7A89;
+    --rouge-filet:#7A3742;
+    --rouge-doux:#33161C;
+    --vert:#4FBF8E;
+    --filet:#232E45;
+    --ombre:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --papier:#0F141E;
+  --surface:#161D2A;
+  --carreau:#1B2434;
+  --encre:#E7EBF5;
+  --encre-2:#A2ACC2;
+  --encre-3:#6D7891;
+  --bleu:#8CA5FF;
+  --bleu-doux:#1B2540;
+  --rouge:#FF7A89;
+  --rouge-filet:#7A3742;
+  --rouge-doux:#33161C;
+  --vert:#4FBF8E;
+  --filet:#232E45;
+  --ombre:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background-color:var(--papier);
+  background-image:
+    linear-gradient(var(--carreau) 1px, transparent 1px),
+    linear-gradient(90deg, var(--carreau) 1px, transparent 1px);
+  background-size:26px 26px;
+  color:var(--encre);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size:16px;
+  line-height:1.45;
+  -webkit-text-size-adjust:100%;
+}
+button, input, textarea, select{font:inherit; color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--bleu); outline-offset:2px; border-radius:4px}
+::selection{background:var(--bleu-doux)}
+
+.app{max-width:44rem; margin:0 auto; padding:0 1rem 6rem}
+
+/* ---------- en-tête ---------- */
+.entete{display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; padding:1.5rem 0 1rem}
+.marque h1{
+  font-family:"Bricolage Grotesque", Georgia, serif;
+  font-weight:800; font-size:1.9rem; letter-spacing:-.025em;
+  margin:0; line-height:1; text-wrap:balance;
+}
+.semaine{margin:.35rem 0 0; font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.72rem; letter-spacing:.09em; text-transform:uppercase; color:var(--encre-3)}
+.entete-actions{display:flex; align-items:center; gap:.5rem}
+.sync{
+  display:inline-flex; align-items:center; gap:.4rem;
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.68rem;
+  color:var(--encre-3); white-space:nowrap;
+}
+.sync .pastille{width:6px; height:6px; border-radius:50%; background:var(--encre-3); flex:none}
+.sync[data-etat="ok"] .pastille{background:var(--vert)}
+.sync[data-etat="sync"] .pastille{background:var(--bleu); animation:pulse 1s ease-in-out infinite}
+.sync[data-etat="erreur"] .pastille{background:var(--rouge)}
+@keyframes pulse{50%{opacity:.25}}
+.ic{
+  background:transparent; border:1px solid var(--filet); border-radius:var(--r);
+  width:2.1rem; height:2.1rem; display:grid; place-items:center; color:var(--encre-2); flex:none;
+}
+.ic:hover{background:var(--surface); color:var(--encre)}
+
+/* ---------- menu ---------- */
+.menu{
+  background:var(--surface); border:1px solid var(--filet); border-radius:var(--r);
+  box-shadow:var(--ombre); padding:.35rem; margin:-.5rem 0 1rem; display:grid; gap:1px;
+}
+.menu button{
+  background:transparent; border:0; text-align:left; padding:.55rem .7rem; border-radius:6px;
+  font-size:.9rem; color:var(--encre);
+}
+.menu button:hover{background:var(--bleu-doux)}
+.menu .sep{height:1px; background:var(--filet); margin:.25rem 0}
+.menu .danger{color:var(--rouge)}
+
+/* ---------- barre collante : saisie + onglets ---------- */
+.collant{position:sticky; top:0; z-index:20; background:var(--papier); padding-top:.25rem; margin:0 -1rem; padding-left:1rem; padding-right:1rem}
+.collant::after{content:""; display:block; height:14px; margin:0 -1rem; background:linear-gradient(var(--papier), transparent)}
+
+.capture{display:flex; gap:.5rem; align-items:flex-end}
+.capture textarea{
+  flex:1; resize:none; background:var(--surface); color:var(--encre);
+  border:1px solid var(--filet); border-radius:var(--r);
+  padding:.7rem .85rem; min-height:2.85rem; max-height:9rem; line-height:1.4;
+  box-shadow:var(--ombre);
+}
+.capture textarea:focus{border-color:var(--bleu); outline:none; box-shadow:0 0 0 3px var(--bleu-doux)}
+.capture textarea::placeholder{color:var(--encre-3)}
+.ajouter{
+  background:var(--bleu); color:var(--surface); border:0; border-radius:var(--r);
+  padding:0 1rem; height:2.85rem; font-weight:600; flex:none; box-shadow:var(--ombre);
+}
+.ajouter:hover{filter:brightness(1.08)}
+.astuce{font-size:.72rem; color:var(--encre-3); margin:.4rem 0 0; min-height:1em}
+
+.onglets{display:flex; gap:.3rem; margin-top:.7rem; background:var(--surface); border:1px solid var(--filet); border-radius:var(--r); padding:.25rem}
+.onglets button{
+  flex:1; background:transparent; border:0; border-radius:7px; padding:.45rem .3rem;
+  font-size:.86rem; font-weight:500; color:var(--encre-2);
+  display:flex; align-items:center; justify-content:center; gap:.4rem;
+}
+.onglets button[aria-selected="true"]{background:var(--bleu-doux); color:var(--bleu); font-weight:600}
+.onglets .n{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.72rem; color:var(--encre-3)}
+.onglets button[aria-selected="true"] .n{color:var(--bleu)}
+
+/* ---------- listes ---------- */
+.vue{padding-top:.5rem}
+.liste{position:relative; margin-top:.25rem}
+.liste::before{content:""; position:absolute; left:var(--marge); top:0; bottom:0; width:1px; background:var(--rouge-filet)}
+
+.rayon{
+  margin:1.35rem 0 .15rem var(--marge); padding-left:.9rem;
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:.66rem; letter-spacing:.13em; text-transform:uppercase; color:var(--encre-3);
+  display:flex; align-items:baseline; gap:.5rem;
+}
+.rayon:first-child{margin-top:.4rem}
+.rayon .trait{flex:1; height:1px; background:var(--filet)}
+
+.ligne{
+  position:relative; margin-left:var(--marge); padding:.62rem 0 .62rem .9rem;
+  border-bottom:1px solid var(--filet); display:flex; align-items:flex-start; gap:.6rem;
+}
+.ligne:hover .sup{opacity:1}
+.case{
+  position:absolute; left:-1.9rem; top:.6rem;
+  width:1.25rem; height:1.25rem; border-radius:5px; flex:none;
+  border:1.5px solid var(--encre-3); background:var(--surface); padding:0;
+  display:grid; place-items:center;
+}
+.case:hover{border-color:var(--bleu)}
+.case svg{width:.8rem; height:.8rem; stroke:var(--vert); stroke-width:2.6; fill:none; stroke-linecap:round; stroke-linejoin:round; opacity:0; transform:scale(.6)}
+.ligne.coche .case{border-color:var(--vert); background:var(--vert); border-style:solid}
+.ligne.coche .case svg{opacity:1; transform:scale(1); stroke:var(--surface); transition:opacity .12s, transform .18s cubic-bezier(.2,1.4,.4,1)}
+.ligne.urgent .case{border-color:var(--rouge)}
+
+.txt{flex:0 1 auto; margin-right:auto; min-width:0; position:relative; word-break:break-word; cursor:text}
+.txt::after{
+  content:""; position:absolute; left:0; right:0; top:.72em; height:1.5px; background:var(--encre-3);
+  transform:scaleX(0); transform-origin:left; border-radius:2px;
+}
+.ligne.coche .txt{color:var(--encre-3)}
+.ligne.coche .txt::after{transform:scaleX(1)}
+.ligne.coche.trace .txt::after{animation:trait .22s ease-out}
+@keyframes trait{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.ligne.urgent .txt{font-weight:600}
+
+.qte{
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.78rem;
+  color:var(--encre-2); background:var(--bleu-doux); border-radius:5px;
+  padding:.1rem .38rem; flex:none; align-self:flex-start; margin-top:.08rem;
+  font-variant-numeric:tabular-nums;
+}
+.ligne.coche .qte{opacity:.5}
+.marqueur{position:absolute; left:.22rem; top:.72rem; width:3px; height:1rem; border-radius:2px; background:var(--rouge)}
+.sup{
+  background:transparent; border:0; color:var(--encre-3); padding:0 .1rem; flex:none;
+  opacity:0; transition:opacity .12s; font-size:1.05rem; line-height:1.2;
+}
+.sup:hover{color:var(--rouge)}
+@media (hover:none){.sup{opacity:.55}}
+.edit{
+  flex:1; background:var(--surface); border:1px solid var(--bleu); border-radius:6px;
+  padding:.15rem .4rem; margin:-.16rem 0;
+}
+
+/* ---------- habituels ---------- */
+.habituels{margin:.2rem 0 .3rem}
+.habituels h2{
+  font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.66rem; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--encre-3); margin:0 0 .5rem; font-weight:500;
+}
+.puces{display:flex; flex-wrap:wrap; gap:.35rem}
+.puce{
+  background:var(--surface); border:1px dashed var(--filet); border-radius:99px;
+  padding:.28rem .7rem; font-size:.82rem; color:var(--encre-2);
+}
+.puce:hover{border-style:solid; border-color:var(--bleu); color:var(--bleu); background:var(--bleu-doux)}
+.puce::before{content:"+ "; color:var(--encre-3)}
+.puce:hover::before{color:var(--bleu)}
+
+/* ---------- pied de liste ---------- */
+.actions{display:flex; flex-wrap:wrap; gap:.45rem; margin-top:1.4rem}
+.act{
+  background:var(--surface); border:1px solid var(--filet); border-radius:var(--r);
+  padding:.45rem .8rem; font-size:.84rem; color:var(--encre-2);
+}
+.act:hover{border-color:var(--bleu); color:var(--bleu)}
+.act.principal{background:var(--encre); color:var(--papier); border-color:var(--encre); font-weight:600}
+.act.principal:hover{filter:brightness(1.15); color:var(--papier)}
+
+/* ---------- vide ---------- */
+.vide{
+  margin:2.5rem 0; padding:2rem 1.5rem; text-align:center;
+  border:1px dashed var(--filet); border-radius:var(--r); background:var(--surface);
+}
+.vide p{margin:0; color:var(--encre-2); font-size:.92rem}
+.vide p + p{margin-top:.5rem; color:var(--encre-3); font-size:.82rem}
+
+/* ---------- recettes ---------- */
+.recette{
+  background:var(--surface); border:1px solid var(--filet); border-radius:var(--r);
+  padding:.9rem 1rem; margin-bottom:.7rem; box-shadow:var(--ombre);
+}
+.recette.faite{opacity:.55}
+.recette-tete{display:flex; align-items:flex-start; gap:.6rem}
+.recette-tete .sup{opacity:.5; font-size:1.25rem}
+.recette-tete .sup:hover{opacity:1}
+.recette h3{
+  font-family:"Bricolage Grotesque", Georgia, serif; font-weight:700; font-size:1.05rem;
+  margin:0; flex:1; letter-spacing:-.01em; text-wrap:balance;
+}
+.recette .src{font-size:.75rem; color:var(--bleu); text-decoration:none; word-break:break-all}
+.recette .src:hover{text-decoration:underline}
+.meta{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.7rem; color:var(--encre-3); margin:.3rem 0 0}
+.ing{list-style:none; padding:0; margin:.7rem 0 0; display:grid; gap:.1rem}
+.ing li{display:flex; align-items:center; gap:.5rem; font-size:.88rem; color:var(--encre-2)}
+.ing input{accent-color:var(--bleu); width:1rem; height:1rem; flex:none}
+.notes{font-size:.85rem; color:var(--encre-2); margin:.7rem 0 0; white-space:pre-wrap; border-left:2px solid var(--filet); padding-left:.7rem}
+.recette-actions{display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.85rem}
+
+.form{background:var(--surface); border:1px solid var(--bleu); border-radius:var(--r); padding:1rem; margin-bottom:.9rem; display:grid; gap:.6rem; box-shadow:var(--ombre)}
+.form label{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.66rem; letter-spacing:.11em; text-transform:uppercase; color:var(--encre-3); display:block; margin-bottom:.25rem}
+.form input, .form textarea{
+  width:100%; background:var(--papier); border:1px solid var(--filet); border-radius:7px;
+  padding:.5rem .65rem; color:var(--encre); resize:vertical;
+}
+.form input:focus, .form textarea:focus{border-color:var(--bleu); outline:none}
+
+/* ---------- mode magasin ---------- */
+.magasin{position:fixed; inset:0; z-index:60; background:var(--papier); display:flex; flex-direction:column}
+.magasin-tete{padding:1rem 1.1rem .8rem; border-bottom:1px solid var(--filet); background:var(--surface)}
+.magasin-tete .haut{display:flex; align-items:center; justify-content:space-between; gap:1rem}
+.magasin-tete h2{font-family:"Bricolage Grotesque", Georgia, serif; font-size:1.15rem; margin:0; font-weight:700}
+.jauge{height:5px; border-radius:3px; background:var(--filet); margin-top:.7rem; overflow:hidden}
+.jauge i{display:block; height:100%; background:var(--vert); border-radius:3px; transition:width .3s ease}
+.compte{font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.75rem; color:var(--encre-2); font-variant-numeric:tabular-nums}
+.magasin-corps{flex:1; overflow-y:auto; padding:.5rem 1.1rem 3rem; max-width:44rem; margin:0 auto; width:100%}
+.magasin-corps .rayon{margin-left:0; padding-left:0; margin-top:1.4rem}
+.gros{
+  width:100%; text-align:left; background:var(--surface); border:1px solid var(--filet);
+  border-radius:var(--r); padding:.95rem 1rem; margin-bottom:.4rem;
+  display:flex; align-items:center; gap:.85rem; font-size:1.02rem; color:var(--encre);
+}
+.gros:hover{border-color:var(--bleu)}
+.gros .box{width:1.4rem; height:1.4rem; border:1.5px solid var(--encre-3); border-radius:6px; flex:none}
+.gros.parti{opacity:0; transform:translateX(14px); transition:opacity .25s, transform .25s}
+.fini{text-align:center; padding:3rem 1rem; color:var(--encre-2)}
+.fini strong{display:block; font-family:"Bricolage Grotesque", Georgia, serif; font-size:1.3rem; color:var(--encre); margin-bottom:.4rem}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed; left:50%; bottom:1.2rem; transform:translateX(-50%);
+  background:var(--encre); color:var(--papier); border-radius:99px; padding:.55rem 1rem;
+  display:flex; align-items:center; gap:.8rem; font-size:.86rem; z-index:80; box-shadow:var(--ombre);
+  max-width:calc(100% - 2rem);
+}
+.toast button{background:transparent; border:0; color:var(--papier); font-weight:600; text-decoration:underline; padding:0}
+
+@media (min-width:640px){ :root{--marge:3rem} .app{padding:0 1.5rem 6rem} .collant{margin:0 -1.5rem; padding-left:1.5rem; padding-right:1.5rem} }
+@media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+</style>
+
+<div class="app">
+  <header class="entete">
+    <div class="marque">
+      <h1>Carnet</h1>
+      <p class="semaine" id="semaine">&nbsp;</p>
+    </div>
+    <div class="entete-actions">
+      <span class="sync" id="sync" data-etat="local" title="État de la sauvegarde"><span class="pastille"></span><span id="sync-txt">local</span></span>
+      <button class="ic" id="btn-menu" aria-label="Menu" aria-expanded="false">&#8943;</button>
+    </div>
+  </header>
+
+  <nav class="menu" id="menu" hidden>
+    <button data-menu="semaine">Nouvelle semaine &mdash; range ce qui est coch&eacute;</button>
+    <button data-menu="copier">Copier la liste de courses</button>
+    <div class="sep"></div>
+    <button data-menu="export">T&eacute;l&eacute;charger une sauvegarde (.json)</button>
+    <button data-menu="import">Restaurer une sauvegarde&hellip;</button>
+    <div class="sep"></div>
+    <button data-menu="oubli" class="danger">Oublier les habituels</button>
+  </nav>
+
+  <div class="collant">
+    <form class="capture" id="capture">
+      <textarea id="saisie" rows="1" autocomplete="off" spellcheck="false" aria-label="Ajouter"></textarea>
+      <button class="ajouter" type="submit">Ajouter</button>
+    </form>
+    <p class="astuce" id="astuce"></p>
+    <div class="onglets" role="tablist">
+      <button role="tab" data-onglet="courses" aria-selected="true">Courses <span class="n" id="n-courses">0</span></button>
+      <button role="tab" data-onglet="taches" aria-selected="false">&Agrave; faire <span class="n" id="n-taches">0</span></button>
+      <button role="tab" data-onglet="recettes" aria-selected="false">Recettes <span class="n" id="n-recettes">0</span></button>
+    </div>
+  </div>
+
+  <main class="vue" id="vue"></main>
+</div>
+
+<div class="magasin" id="magasin" hidden>
+  <div class="magasin-tete">
+    <div class="haut">
+      <h2>Mode magasin</h2>
+      <div style="display:flex;align-items:center;gap:.8rem">
+        <span class="compte" id="mag-compte"></span>
+        <button class="act" id="mag-sortir">Terminer</button>
+      </div>
+    </div>
+    <div class="jauge"><i id="mag-jauge" style="width:0%"></i></div>
+  </div>
+  <div class="magasin-corps" id="mag-corps"></div>
+</div>
+
+<input type="file" id="fichier" accept="application/json,.json" hidden>
+<script id="etat-initial" type="application/json">{}</script>
+<script>
+(function(){
+"use strict";
+
+/* ============ rayons ============ */
+var RAYONS = [
+ ["Fruits & légumes", "pomme|pommes|banane|tomate|tomates cerises|salade|salade verte|laitue|roquette|mache|carotte|oignon|oignon rouge|ail|citron|citron vert|lime|avocat|courgette|aubergine|poivron|champignon|pomme de terre|patate|patate douce|brocoli|epinard|concombre|radis|poireau|fraise|framboise|myrtille|cassis|raisin|orange|clementine|mandarine|pamplemousse|mangue|ananas|persil|coriandre|basilic|menthe|thym|romarin|laurier|gingembre|echalote|betterave|chou|chou fleur|chou rouge|choux de bruxelles|fenouil|endive|celeri|navet|haricot vert|petit pois|melon|pasteque|kiwi|poire|peche|abricot|cerise|figue|courge|potiron|citrouille|mais|datte|grenade|rhubarbe|artichaut|asperge|blette|panais|topinambour|noix de coco|herbes fraiches|fruits|legumes"],
+ ["Frais", "lait|beurre|creme|creme fraiche|creme liquide|yaourt|fromage|fromage blanc|fromage frais|fromage rape|petit suisse|oeuf|oeufs|jambon|lardon|saumon|saumon fume|poulet|blanc de poulet|dinde|boeuf|porc|veau|agneau|viande hachee|steak|steak hache|escalope|filet|cuisse|magret|poisson|cabillaud|colin|merlu|truite|crevette|moule|huitre|saint jacques|tofu|tempeh|mozzarella|burrata|parmesan|comte|gruyere|emmental|cheddar|chevre|feta|ricotta|mascarpone|roquefort|camembert|reblochon|raclette|pate feuilletee|pate brisee|pate a pizza|saucisse|merguez|chorizo|bacon|terrine|rillettes|houmous|tzatziki|skyr|lait de brebis"],
+ ["Épicerie", "pates|spaghetti|penne|tagliatelle|tagliatelles|lasagne|riz|risotto|farine|sucre|sucre glace|sel|poivre|huile|huile d olive|vinaigre|balsamique|conserve|sauce tomate|tomate pelee|coulis de tomate|concentre de tomate|passata|lentille|pois chiche|haricot rouge|haricot blanc|quinoa|semoule|couscous|boulgour|epeautre|cereales|muesli|granola|avoine|flocons d avoine|miel|sirop d erable|confiture|pate a tartiner|chocolat|cacao|levure|bicarbonate|vanille|cumin|paprika|curry|curcuma|cannelle|muscade|origan|herbes de provence|piment|moutarde|ketchup|mayonnaise|sauce soja|tahini|bouillon|noix|amande|noisette|cacahuete|pistache|raisin sec|abricot sec|biscuit|gateau|chips|crackers|thon|sardine|maquereau|lait de coco|cafe|the|tisane|infusion|pain|baguette|pain de mie|brioche|tortilla|wrap|biscotte|sesame|graines|nori|algue|gelatine|agar agar|maizena|chapelure|polenta"],
+ ["Surgelés", "surgele|surgeles|surgelee|surgelees|glace|glaces|sorbet|glacon|frite|frites|pizza|nugget|poelee|fruits rouges surgeles|petits pois surgeles|epinards surgeles"],
+ ["Boissons", "eau|eau gazeuse|eau petillante|jus|jus d orange|jus de pomme|soda|coca|coca cola|limonade|sirop|biere|vin|vin rouge|vin blanc|vin rose|champagne|cremant|cidre|kombucha|perrier|san pellegrino|tonic|schweppes|ice tea|smoothie|lait vegetal|lait d amande|lait d avoine|lait de soja|orangina|whisky|vodka|rhum|apero"],
+ ["Maison & hygiène", "papier toilette|essuie tout|sopalin|lessive|adoucissant|liquide vaisselle|vaisselle|pastille lave vaisselle|eponge|savon|shampooing|apres shampooing|gel douche|dentifrice|brosse a dents|fil dentaire|deodorant|mouchoir|coton|coton tige|demaquillant|sac poubelle|poubelle|ampoule|pile|piles|rasoir|mousse a raser|creme solaire|creme hydratante|medicament|doliprane|paracetamol|ibuprofene|pansement|serviette hygienique|tampon|preservatif|litiere|croquette|croquettes|allumette|bougie|papier cuisson|papier aluminium|film etirable|javel|desinfectant|nettoyant|balai|serpilliere|lingette"]
+];
+var ORDRE = ["Fruits & légumes","Frais","Épicerie","Surgelés","Boissons","Maison & hygiène","Autres"];
+var IDX = RAYONS.map(function(r){ return [r[0], r[1].split("|").filter(Boolean)]; });
+
+function norm(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[\u2019']/g," "); }
+
+function rayonDe(txt){
+  var n = norm(txt);
+  var mots = n.split(/[^a-z0-9]+/).filter(Boolean);
+  var best = null, score = 0;
+  for(var i=0;i<IDX.length;i++){
+    var nom = IDX[i][0], kws = IDX[i][1];
+    for(var j=0;j<kws.length;j++){
+      var k = kws[j], hit = false;
+      if(k.length < 3) continue;
+      if(k.indexOf(" ") >= 0){ hit = n.indexOf(k) >= 0; }
+      else {
+        for(var m=0;m<mots.length && !hit;m++){
+          var w = mots[m];
+          hit = (w === k) || (w === k+"s") || (w === k+"x") || (k.slice(-1)==="s" && w === k.slice(0,-1));
+        }
+      }
+      if(hit && k.length > score){ score = k.length; best = nom; }
+    }
+  }
+  return best || "Autres";
+}
+
+/* ============ utilitaires ============ */
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function id(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+var JOURS = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+var MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+function lundi(d){ var x = new Date(d); var j = (x.getDay()+6)%7; x.setDate(x.getDate()-j); x.setHours(0,0,0,0); return x; }
+
+function parseArticle(ligne){
+  var t = ligne.trim().replace(/^[-*•–—]\s*/,""), q = "";
+  var m = t.match(/^(\d+(?:[.,]\d+)?)\s*(kg|kilos?|g|grammes?|l|litres?|cl|ml|x|paquets?|boites?|boîtes?|bouteilles?|tranches?|gousses?|cuilleres?|c\.?s|c\.?c)?\.?\s+(.{2,})$/i);
+  if(m){
+    var u = m[2] ? m[2].toLowerCase() : "";
+    q = (m[1] + (u && u !== "x" ? " " + u : "")).trim();
+    t = m[3].trim().replace(/^(?:de la|de l|d|des|du|de|les|le|la|un|une)[\s\u2019']+/i, "").trim();
+  } else {
+    var m2 = t.match(/^(.{2,}?)\s*[x×]\s*(\d+)$/i);
+    if(m2){ t = m2[1].trim(); q = m2[2]; }
+  }
+  return { t: t, q: q };
+}
+function estUrl(s){ return /^(https?:\/\/|www\.)\S+$/i.test(s.trim()); }
+function domaine(u){ try { return new URL(u.indexOf("http")===0?u:"https://"+u).hostname.replace(/^www\./,""); } catch(e){ return u; } }
+
+/* ============ état ============ */
+var CLE = "carnet.etat.v1";
+function etatVide(){ return { v:1, articles:[], taches:[], recettes:[], freq:{}, majAt:0 }; }
+var etat = etatVide();
+var onglet = "courses";
+var formRecette = null;
+var dernierEfface = null, toastTimer = null;
+
+function actifs(l){ return (l||[]).filter(function(x){ return !x.sup; }); }
+function trouver(col,i){ var l = etat[col]||[]; for(var k=0;k<l.length;k++) if(l[k].id===i) return l[k]; return null; }
+
+function fusionner(a,b){
+  var out = etatVide();
+  ["articles","taches","recettes"].forEach(function(col){
+    var m = new Map(), i;
+    (a[col]||[]).forEach(function(x){ m.set(x.id,x); });
+    (b[col]||[]).forEach(function(x){
+      var ex = m.get(x.id);
+      if(!ex || (x.maj||0) > (ex.maj||0)) m.set(x.id,x);
+    });
+    var arr = [];
+    m.forEach(function(x){ if(!(x.sup && Date.now()-(x.maj||0) > 2592000000)) arr.push(x); });
+    arr.sort(function(p,q){ return (p.cree||0)-(q.cree||0); });
+    if(col === "articles") arr.forEach(function(x){ if(!x.rayon) x.rayon = rayonDe(x.t); });
+    out[col] = arr;
+  });
+  out.freq = Object.assign({}, a.freq||{});
+  Object.keys(b.freq||{}).forEach(function(k){ out.freq[k] = Math.max(out.freq[k]||0, b.freq[k]); });
+  out.majAt = Math.max(a.majAt||0, b.majAt||0);
+  return out;
+}
+
+function lireLocal(){
+  try { var s = localStorage.getItem(CLE); return s ? JSON.parse(s) : null; } catch(e){ return null; }
+}
+function ecrireLocal(){
+  try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch(e){}
+}
+
+/* ============ sauvegarde distante ============ */
+var artefact = null, modeFichiers = true, minuterie = null, enCours = false, redemander = false, delai = 2500;
+var elSync = document.getElementById("sync"), elSyncTxt = document.getElementById("sync-txt");
+
+function setSync(e, txt){
+  elSync.setAttribute("data-etat", e);
+  elSyncTxt.textContent = txt;
+}
+setSync("local", "local");
+
+function sauver(){
+  etat.majAt = Date.now();
+  ecrireLocal();
+  if(!artefact) return;
+  if(minuterie) clearTimeout(minuterie);
+  setSync("sync", "…");
+  minuterie = setTimeout(pousser, delai);
+}
+
+function pousser(){
+  minuterie = null;
+  if(!artefact) return;
+  if(enCours){ redemander = true; return; }
+  enCours = true;
+  setSync("sync", "…");
+  var charge = JSON.stringify(etat);
+  var p = modeFichiers
+    ? artefact.publish({ "data/etat.json": charge })
+    : pousserHtml(charge);
+  p.then(function(){
+    enCours = false;
+    setSync("ok", "sauvé");
+    if(redemander){ redemander = false; sauver(); }
+  }).catch(function(err){
+    enCours = false;
+    var code = (err && err.code) || "upstream_error";
+    if(modeFichiers && (code === "capability_disabled" || code === "capability_removed" || code === "read_only_path")){
+      modeFichiers = false; pousser(); return;
+    }
+    if(code === "conflict"){ setSync("sync", "maj…"); return; }
+    if(code === "not_writer" || code === "not_granted" || code === "not_declared" || code === "consent_required"){
+      artefact = null; setSync("local", "local"); return;
+    }
+    if(code === "rate_limited"){ delai = 15000; setSync("sync", "…"); minuterie = setTimeout(pousser, delai); return; }
+    setSync("erreur", "local");
+  });
+}
+
+function pousserHtml(charge){
+  return fetch("index.html", {cache:"no-store"}).then(function(r){ return r.text(); }).then(function(src){
+    var bloc = '<script id="etat-initial" type="application/json">' + charge.replace(/</g,"\\u003c") + '<\/script>';
+    var re = /<script id="etat-initial" type="application\/json">[\s\S]*?<\/script>/;
+    var out = re.test(src) ? src.replace(re, bloc) : src.replace("</body>", bloc + "</body>");
+    return artefact.publish(out);
+  });
+}
+
+/* ============ rendu ============ */
+var elVue = document.getElementById("vue");
+var elSaisie = document.getElementById("saisie");
+var elAstuce = document.getElementById("astuce");
+
+var COCHE = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.4l3.2 3.2L13 4.7"/></svg>';
+
+function vide(titre, sous){
+  return '<div class="vide"><p>' + esc(titre) + '</p><p>' + esc(sous) + '</p></div>';
+}
+
+function habituels(actuels){
+  var deja = {};
+  actuels.forEach(function(a){ deja[norm(a.t)] = 1; });
+  return Object.keys(etat.freq||{})
+    .filter(function(k){ return (etat.freq[k]||0) >= 2 && !deja[norm(k)]; })
+    .sort(function(a,b){ return etat.freq[b]-etat.freq[a]; })
+    .slice(0,10);
+}
+
+function ligneArticle(a){
+  return '<div class="ligne' + (a.coche?" coche":"") + '" data-id="' + a.id + '" data-col="articles">'
+    + '<button class="case" data-act="cocher" aria-pressed="' + (a.coche?"true":"false") + '" aria-label="Cocher ' + esc(a.t) + '">' + COCHE + '</button>'
+    + '<span class="txt" data-act="editer">' + esc(a.t) + '</span>'
+    + (a.q ? '<span class="qte">' + esc(a.q) + '</span>' : "")
+    + '<button class="sup" data-act="supprimer" aria-label="Supprimer">&times;</button>'
+    + '</div>';
+}
+
+function vueCourses(){
+  var arts = actifs(etat.articles), h = "";
+  var hab = habituels(arts);
+  if(hab.length){
+    h += '<section class="habituels"><h2>Habituels</h2><div class="puces">'
+      + hab.map(function(x){ return '<button class="puce" data-hab="' + esc(x) + '">' + esc(x) + '</button>'; }).join("")
+      + '</div></section>';
+  }
+  if(!arts.length){
+    h += vide("La liste est vide.", "Écris un article ci-dessus — « 3 citrons », « 500 g farine ». Une ligne par article.");
+    return h;
+  }
+  var groupes = {};
+  arts.forEach(function(a){ var r = a.rayon || "Autres"; (groupes[r] = groupes[r] || []).push(a); });
+  h += '<div class="liste">';
+  ORDRE.forEach(function(r){
+    var g = groupes[r]; if(!g) return;
+    var reste = g.filter(function(a){ return !a.coche; }).length;
+    h += '<div class="rayon"><span>' + esc(r) + '</span><span class="trait"></span><span>' + reste + "/" + g.length + '</span></div>';
+    h += g.map(ligneArticle).join("");
+  });
+  h += '</div>';
+  var coches = arts.filter(function(a){ return a.coche; }).length;
+  h += '<div class="actions">'
+    + '<button class="act principal" data-act="magasin">Mode magasin</button>'
+    + '<button class="act" data-act="copier">Copier la liste</button>'
+    + (coches ? '<button class="act" data-act="vider-coches">' + (coches>1 ? "Retirer les " + coches + " cochés" : "Retirer l’article coché") + '</button>' : "")
+    + '</div>';
+  return h;
+}
+
+function vueTaches(){
+  var ts = actifs(etat.taches);
+  if(!ts.length) return vide("Rien à faire.", "Note ce que tu dois faire. Commence par « ! » pour marquer urgent.");
+  var urgentes = ts.filter(function(t){ return t.urgent && !t.fait; });
+  var normales = ts.filter(function(t){ return !t.urgent && !t.fait; });
+  var faites = ts.filter(function(t){ return t.fait; });
+  function bloc(titre, l){
+    if(!l.length) return "";
+    return '<div class="rayon"><span>' + esc(titre) + '</span><span class="trait"></span><span>' + l.length + '</span></div>'
+      + l.map(ligneTache).join("");
+  }
+  var h = '<div class="liste">' + bloc("Urgent", urgentes) + bloc("À faire", normales) + bloc("Terminé", faites) + '</div>';
+  if(faites.length){
+    h += '<div class="actions"><button class="act" data-act="vider-faites">' + (faites.length>1 ? "Retirer les " + faites.length + " terminées" : "Retirer la tâche terminée") + '</button></div>';
+  }
+  return h;
+}
+
+function ligneTache(t){
+  return '<div class="ligne' + (t.fait?" coche":"") + (t.urgent?" urgent":"") + '" data-id="' + t.id + '" data-col="taches">'
+    + (t.urgent && !t.fait ? '<span class="marqueur"></span>' : "")
+    + '<button class="case" data-act="cocher" aria-pressed="' + (t.fait?"true":"false") + '" aria-label="Terminer ' + esc(t.t) + '">' + COCHE + '</button>'
+    + '<span class="txt" data-act="editer">' + esc(t.t) + '</span>'
+    + '<button class="sup" data-act="urgent" aria-label="Marquer urgent" title="Urgent">!</button>'
+    + '<button class="sup" data-act="supprimer" aria-label="Supprimer">&times;</button>'
+    + '</div>';
+}
+
+function vueRecettes(){
+  var rs = actifs(etat.recettes), h = "";
+  if(formRecette !== null) h += formulaireRecette();
+  else h += '<div class="actions" style="margin:0 0 1rem"><button class="act principal" data-act="nouvelle-recette">Nouvelle recette</button></div>';
+  if(!rs.length){
+    h += vide("Aucune recette notée.", "Colle le titre en première ligne, le lien de la vidéo, puis les ingrédients — un par ligne.");
+    return h;
+  }
+  var aFaire = rs.filter(function(r){ return !r.faite; });
+  var faites = rs.filter(function(r){ return r.faite; });
+  h += aFaire.concat(faites).map(carteRecette).join("");
+  return h;
+}
+
+function carteRecette(r){
+  var ing = r.ing || [];
+  var h = '<article class="recette' + (r.faite?" faite":"") + '" data-id="' + r.id + '" data-col="recettes">'
+    + '<div class="recette-tete"><h3>' + esc(r.t) + '</h3>'
+    + '<button class="sup" data-act="supprimer-recette" aria-label="Supprimer la recette">&times;</button></div>';
+  if(r.src) h += '<a class="src" href="' + esc(r.src) + '" target="_blank" rel="noopener noreferrer">' + esc(domaine(r.src)) + '</a>';
+  h += '<p class="meta">' + ing.length + " ingrédient" + (ing.length>1?"s":"") + (r.faite ? " · faite" : "") + '</p>';
+  if(ing.length){
+    h += '<ul class="ing">' + ing.map(function(x,i){
+      return '<li><input type="checkbox" checked data-ing="' + i + '" id="ing-' + r.id + '-' + i + '"><label for="ing-' + r.id + '-' + i + '">' + esc(x) + '</label></li>';
+    }).join("") + '</ul>';
+  }
+  if(r.notes) h += '<p class="notes">' + esc(r.notes) + '</p>';
+  h += '<div class="recette-actions">'
+    + (ing.length ? '<button class="act principal" data-act="vers-courses">Ajouter aux courses</button>' : "")
+    + '<button class="act" data-act="modifier-recette">Modifier</button>'
+    + '<button class="act" data-act="basculer-faite">' + (r.faite ? "À refaire" : "Marquer faite") + '</button>'
+    + '</div></article>';
+  return h;
+}
+
+function formulaireRecette(){
+  var r = formRecette === "nouvelle" ? {t:"",src:"",ing:[],notes:""} : (trouver("recettes", formRecette) || {t:"",src:"",ing:[],notes:""});
+  return '<form class="form" id="form-recette">'
+    + '<div><label for="f-nom">Nom</label><input id="f-nom" value="' + esc(r.t) + '" placeholder="Pâtes au citron" required></div>'
+    + '<div><label for="f-src">Lien (optionnel)</label><input id="f-src" value="' + esc(r.src||"") + '" placeholder="https://…"></div>'
+    + '<div><label for="f-ing">Ingrédients — un par ligne</label><textarea id="f-ing" rows="6" placeholder="2 citrons&#10;250 g spaghetti&#10;parmesan">' + esc((r.ing||[]).join("\n")) + '</textarea></div>'
+    + '<div><label for="f-notes">Notes (optionnel)</label><textarea id="f-notes" rows="2">' + esc(r.notes||"") + '</textarea></div>'
+    + '<div class="actions" style="margin:0"><button class="act principal" type="submit">Enregistrer</button>'
+    + '<button class="act" type="button" data-act="annuler-recette">Annuler</button></div>'
+    + '</form>';
+}
+
+var PLACEHOLDERS = {
+  courses: "Ajouter aux courses\u2026",
+  taches:  "Ajouter une t\u00e2che\u2026",
+  recettes:"Nouvelle recette\u2026"
+};
+var ASTUCES = {
+  courses: "Une ligne par article \u2014 « 3 citrons », « 500 g farine ».",
+  taches:  "Commence par « ! » pour marquer urgent.",
+  recettes:"Nom, puis lien, puis ingr\u00e9dients \u2014 un par ligne."
+};
+
+function rendre(){
+  elSaisie.placeholder = PLACEHOLDERS[onglet];
+  elAstuce.textContent = ASTUCES[onglet];
+  document.getElementById("n-courses").textContent = actifs(etat.articles).filter(function(a){return !a.coche;}).length;
+  document.getElementById("n-taches").textContent = actifs(etat.taches).filter(function(t){return !t.fait;}).length;
+  document.getElementById("n-recettes").textContent = actifs(etat.recettes).filter(function(r){return !r.faite;}).length;
+  document.querySelectorAll(".onglets button").forEach(function(b){
+    b.setAttribute("aria-selected", b.dataset.onglet === onglet ? "true" : "false");
+  });
+  elVue.innerHTML = onglet === "courses" ? vueCourses() : onglet === "taches" ? vueTaches() : vueRecettes();
+}
+
+function majCompteurs(){
+  document.getElementById("n-courses").textContent = actifs(etat.articles).filter(function(a){return !a.coche;}).length;
+  document.getElementById("n-taches").textContent = actifs(etat.taches).filter(function(t){return !t.fait;}).length;
+}
+
+/* ============ ajout ============ */
+function ajouterArticle(ligne){
+  var p = parseArticle(ligne);
+  if(!p.t) return;
+  var liste = actifs(etat.articles), ex = null;
+  for(var i=0;i<liste.length;i++) if(norm(liste[i].t) === norm(p.t)){ ex = liste[i]; break; }
+  if(ex){
+    ex.coche = false;
+    if(p.q) ex.q = p.q;
+    ex.maj = Date.now();
+  } else {
+    etat.articles.push({ id:id(), t:p.t, q:p.q, rayon:rayonDe(p.t), coche:false, cree:Date.now(), maj:Date.now() });
+  }
+  var k = p.t.toLowerCase();
+  etat.freq[k] = (etat.freq[k]||0) + 1;
+}
+
+function ajouterTache(ligne){
+  var t = ligne.replace(/^[-*•–—]\s*/,"").trim(), urgent = false;
+  if(/^!\s*/.test(t)){ urgent = true; t = t.replace(/^!\s*/,"").trim(); }
+  if(!t) return;
+  etat.taches.push({ id:id(), t:t, urgent:urgent, fait:false, cree:Date.now(), maj:Date.now() });
+}
+
+function ajouterRecette(lignes){
+  var src = "", reste = [];
+  lignes.forEach(function(l){
+    var v = l.replace(/^[-*•–—]\s*/,"").trim();
+    if(!src && estUrl(v)) src = v; else if(v) reste.push(v);
+  });
+  var nom = reste.shift() || "Recette";
+  etat.recettes.push({ id:id(), t:nom, src:src, ing:reste, notes:"", faite:false, cree:Date.now(), maj:Date.now() });
+}
+
+function ajouter(texte){
+  var lignes = texte.split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean);
+  if(!lignes.length) return;
+  if(onglet === "courses") lignes.forEach(ajouterArticle);
+  else if(onglet === "taches") lignes.forEach(ajouterTache);
+  else ajouterRecette(lignes);
+  sauver(); rendre();
+}
+
+/* ============ interactions ============ */
+document.getElementById("capture").addEventListener("submit", function(e){
+  e.preventDefault();
+  ajouter(elSaisie.value);
+  elSaisie.value = "";
+  elSaisie.style.height = "auto";
+  elSaisie.focus();
+});
+elSaisie.addEventListener("keydown", function(e){
+  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); document.getElementById("capture").requestSubmit(); }
+});
+elSaisie.addEventListener("input", function(){
+  elSaisie.style.height = "auto";
+  elSaisie.style.height = Math.min(elSaisie.scrollHeight, 144) + "px";
+});
+
+document.querySelectorAll(".onglets button").forEach(function(b){
+  b.addEventListener("click", function(){ onglet = b.dataset.onglet; formRecette = null; rendre(); });
+});
+
+function editerLigne(span, row){
+  var col = row.dataset.col, it = trouver(col, row.dataset.id);
+  if(!it) return;
+  var input = document.createElement("input");
+  input.className = "edit"; input.value = it.t; input.setAttribute("aria-label", "Modifier");
+  span.replaceWith(input);
+  input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+  var fini = false;
+  function valider(){
+    if(fini) return; fini = true;
+    var v = input.value.trim();
+    if(v && v !== it.t){ it.t = v; if(col === "articles") it.rayon = rayonDe(v); it.maj = Date.now(); sauver(); }
+    rendre();
+  }
+  input.addEventListener("blur", valider);
+  input.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); valider(); }
+    else if(e.key === "Escape"){ fini = true; rendre(); }
+  });
+}
+
+function effacer(col, iid, quoi){
+  var it = trouver(col, iid); if(!it) return;
+  it.sup = true; it.maj = Date.now(); sauver(); rendre();
+  toast(quoi + " supprimé" + (quoi === "Recette" ? "e" : ""), function(){
+    it.sup = false; it.maj = Date.now(); sauver(); rendre();
+  });
+}
+
+elVue.addEventListener("click", function(e){
+  var chip = e.target.closest("[data-hab]");
+  if(chip){ ajouterArticle(chip.dataset.hab); sauver(); rendre(); return; }
+  var btn = e.target.closest("[data-act]");
+  if(!btn) return;
+  var act = btn.dataset.act;
+  var row = btn.closest("[data-id]");
+  var col = row ? row.dataset.col : null;
+  var it = row ? trouver(col, row.dataset.id) : null;
+
+  if(act === "cocher" && it){
+    var champ = col === "articles" ? "coche" : "fait";
+    it[champ] = !it[champ]; it.maj = Date.now();
+    sauver(); rendre();
+    if(it[champ]){ var n = elVue.querySelector('.ligne[data-id="' + it.id + '"]'); if(n) n.classList.add("trace"); }
+  }
+  else if(act === "editer" && it){ editerLigne(btn, row); }
+  else if(act === "urgent" && it){ it.urgent = !it.urgent; it.maj = Date.now(); sauver(); rendre(); }
+  else if(act === "supprimer" && it){ effacer(col, it.id, col === "articles" ? "Article" : "Tâche"); }
+  else if(act === "supprimer-recette" && it){ effacer("recettes", it.id, "Recette"); }
+  else if(act === "basculer-faite" && it){ it.faite = !it.faite; it.maj = Date.now(); sauver(); rendre(); }
+  else if(act === "modifier-recette" && it){ formRecette = it.id; rendre(); }
+  else if(act === "nouvelle-recette"){ formRecette = "nouvelle"; rendre(); setTimeout(function(){ var f = document.getElementById("f-nom"); if(f) f.focus(); }, 0); }
+  else if(act === "annuler-recette"){ formRecette = null; rendre(); }
+  else if(act === "vers-courses" && it){
+    var choisis = [];
+    row.querySelectorAll("input[data-ing]").forEach(function(c){ if(c.checked) choisis.push(it.ing[+c.dataset.ing]); });
+    if(!choisis.length){ toast("Aucun ingrédient coché."); return; }
+    choisis.forEach(ajouterArticle);
+    sauver();
+    onglet = "courses"; rendre();
+    toast(choisis.length + " ingrédient" + (choisis.length>1?"s":"") + " ajouté" + (choisis.length>1?"s":"") + " aux courses.");
+  }
+  else if(act === "magasin"){ ouvrirMagasin(); }
+  else if(act === "copier"){ copierCourses(); }
+  else if(act === "vider-coches"){
+    actifs(etat.articles).forEach(function(a){ if(a.coche){ a.sup = true; a.maj = Date.now(); } });
+    sauver(); rendre();
+  }
+  else if(act === "vider-faites"){
+    actifs(etat.taches).forEach(function(t){ if(t.fait){ t.sup = true; t.maj = Date.now(); } });
+    sauver(); rendre();
+  }
+});
+
+elVue.addEventListener("submit", function(e){
+  if(e.target.id !== "form-recette") return;
+  e.preventDefault();
+  var nom = document.getElementById("f-nom").value.trim();
+  if(!nom) return;
+  var src = document.getElementById("f-src").value.trim();
+  var ing = document.getElementById("f-ing").value.split(/\r?\n/).map(function(s){ return s.replace(/^[-*•–—]\s*/,"").trim(); }).filter(Boolean);
+  var notes = document.getElementById("f-notes").value.trim();
+  if(formRecette === "nouvelle"){
+    etat.recettes.push({ id:id(), t:nom, src:src, ing:ing, notes:notes, faite:false, cree:Date.now(), maj:Date.now() });
+  } else {
+    var r = trouver("recettes", formRecette);
+    if(r){ r.t = nom; r.src = src; r.ing = ing; r.notes = notes; r.maj = Date.now(); }
+  }
+  formRecette = null;
+  sauver(); rendre();
+});
+
+/* ============ mode magasin ============ */
+var elMagasin = document.getElementById("magasin");
+var elMagCorps = document.getElementById("mag-corps");
+var elMagCompte = document.getElementById("mag-compte");
+var elMagJauge = document.getElementById("mag-jauge");
+
+function ouvrirMagasin(){
+  elMagasin.hidden = false;
+  document.documentElement.style.overflow = "hidden";
+  rendreMagasin();
+}
+function fermerMagasin(){
+  elMagasin.hidden = true;
+  document.documentElement.style.overflow = "";
+  rendre();
+}
+document.getElementById("mag-sortir").addEventListener("click", fermerMagasin);
+document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !elMagasin.hidden) fermerMagasin(); });
+
+function rendreMagasin(){
+  var arts = actifs(etat.articles);
+  var restants = arts.filter(function(a){ return !a.coche; });
+  var total = arts.length, pris = total - restants.length;
+  elMagCompte.textContent = pris + " / " + total;
+  elMagJauge.style.width = (total ? Math.round(pris / total * 100) : 0) + "%";
+  if(!restants.length){
+    elMagCorps.innerHTML = '<div class="fini"><strong>' + (total ? "C’est tout bon." : "Rien à acheter.") + '</strong>'
+      + (total ? "Tout est dans le panier." : "Ajoute des articles avant de partir.") + '</div>';
+    return;
+  }
+  var groupes = {};
+  restants.forEach(function(a){ var r = a.rayon || "Autres"; (groupes[r] = groupes[r] || []).push(a); });
+  var h = "";
+  ORDRE.forEach(function(r){
+    var g = groupes[r]; if(!g) return;
+    h += '<div class="rayon"><span>' + esc(r) + '</span><span class="trait"></span><span>' + g.length + '</span></div>';
+    h += g.map(function(a){
+      return '<button class="gros" data-id="' + a.id + '"><span class="box"></span><span style="flex:1">' + esc(a.t) + '</span>'
+        + (a.q ? '<span class="qte">' + esc(a.q) + '</span>' : "") + '</button>';
+    }).join("");
+  });
+  elMagCorps.innerHTML = h;
+}
+
+elMagCorps.addEventListener("click", function(e){
+  var b = e.target.closest(".gros"); if(!b) return;
+  var a = trouver("articles", b.dataset.id); if(!a) return;
+  a.coche = true; a.maj = Date.now(); sauver(); majCompteurs();
+  b.classList.add("parti");
+  setTimeout(rendreMagasin, 240);
+});
+
+/* ============ toast ============ */
+function toast(msg, annuler){
+  var vieux = document.querySelector(".toast"); if(vieux) vieux.remove();
+  if(toastTimer) clearTimeout(toastTimer);
+  var t = document.createElement("div");
+  t.className = "toast";
+  t.innerHTML = '<span>' + esc(msg) + '</span>';
+  if(annuler){
+    var b = document.createElement("button");
+    b.textContent = "Annuler";
+    b.addEventListener("click", function(){ t.remove(); annuler(); });
+    t.appendChild(b);
+  }
+  document.body.appendChild(t);
+  toastTimer = setTimeout(function(){ t.remove(); }, annuler ? 6000 : 3000);
+}
+
+/* ============ texte & sauvegarde ============ */
+function texteCourses(){
+  var arts = actifs(etat.articles).filter(function(a){ return !a.coche; });
+  if(!arts.length) return "Liste de courses vide.";
+  var groupes = {};
+  arts.forEach(function(a){ var r = a.rayon || "Autres"; (groupes[r] = groupes[r] || []).push(a); });
+  var l = ["Courses — " + libelleSemaine()];
+  ORDRE.forEach(function(r){
+    if(!groupes[r]) return;
+    l.push("", r.toUpperCase());
+    groupes[r].forEach(function(a){ l.push("- " + a.t + (a.q ? " (" + a.q + ")" : "")); });
+  });
+  return l.join("\n");
+}
+function copier(txt, ok){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ toast(ok); }).catch(function(){ toast("Copie refusée par le navigateur."); });
+  } else { toast("Copie indisponible ici."); }
+}
+function copierCourses(){ copier(texteCourses(), "Liste copiée."); }
+
+function exporter(){
+  var d = new Date(), nom = "carnet-" + d.toISOString().slice(0,10) + ".json";
+  var charge = JSON.stringify(etat, null, 2);
+  var p = (window.claude && claude.use) ? claude.use("downloads") : Promise.resolve(null);
+  p.then(function(dl){
+    if(!dl){ copier(charge, "Sauvegarde copiée dans le presse-papiers."); return; }
+    dl.save({ filename: nom, data: charge })
+      .then(function(){ toast("Sauvegarde enregistrée."); })
+      .catch(function(err){
+        if(err && err.code === "declined") return;
+        copier(charge, "Sauvegarde copiée dans le presse-papiers.");
+      });
+  });
+}
+
+var elFichier = document.getElementById("fichier");
+elFichier.addEventListener("change", function(){
+  var f = elFichier.files && elFichier.files[0]; if(!f) return;
+  f.text().then(function(txt){
+    var d = JSON.parse(txt);
+    if(!d || !d.v) throw new Error("format");
+    etat = fusionner(etat, d);
+    sauver(); rendre();
+    toast("Sauvegarde restaurée.");
+  }).catch(function(){ toast("Fichier illisible."); });
+  elFichier.value = "";
+});
+
+/* ============ menu ============ */
+var elMenu = document.getElementById("menu"), btnMenu = document.getElementById("btn-menu");
+btnMenu.addEventListener("click", function(e){
+  e.stopPropagation();
+  var ouvert = elMenu.hidden;
+  elMenu.hidden = !ouvert;
+  btnMenu.setAttribute("aria-expanded", ouvert ? "true" : "false");
+});
+document.addEventListener("click", function(e){
+  if(!elMenu.hidden && !elMenu.contains(e.target)){ elMenu.hidden = true; btnMenu.setAttribute("aria-expanded","false"); }
+});
+elMenu.addEventListener("click", function(e){
+  var b = e.target.closest("[data-menu]"); if(!b) return;
+  elMenu.hidden = true; btnMenu.setAttribute("aria-expanded","false");
+  var a = b.dataset.menu;
+  if(a === "semaine"){
+    var n = actifs(etat.articles).filter(function(x){ return x.coche; }).length
+          + actifs(etat.taches).filter(function(x){ return x.fait; }).length;
+    if(!n){ toast("Rien de coché à ranger."); return; }
+    if(!confirm("Ranger " + n + " élément" + (n>1?"s":"") + " coché" + (n>1?"s":"") + " ? Le reste est conservé.")) return;
+    actifs(etat.articles).forEach(function(x){ if(x.coche){ x.sup = true; x.maj = Date.now(); } });
+    actifs(etat.taches).forEach(function(x){ if(x.fait){ x.sup = true; x.maj = Date.now(); } });
+    sauver(); rendre(); toast("Nouvelle semaine.");
+  }
+  else if(a === "copier"){ copierCourses(); }
+  else if(a === "export"){ exporter(); }
+  else if(a === "import"){ elFichier.click(); }
+  else if(a === "oubli"){
+    if(!confirm("Oublier les suggestions d’habituels ?")) return;
+    etat.freq = {}; sauver(); rendre();
+  }
+});
+
+/* ============ démarrage ============ */
+function libelleSemaine(){
+  var l = lundi(new Date());
+  return "semaine du " + l.getDate() + " " + MOIS[l.getMonth()];
+}
+document.getElementById("semaine").textContent = libelleSemaine();
+
+var distantMajAt = 0;
+
+function demarrer(){
+  var loc = lireLocal();
+  if(loc && loc.v) etat = fusionner(etatVide(), loc);
+  try {
+    var emb = JSON.parse(document.getElementById("etat-initial").textContent || "{}");
+    if(emb && emb.v){ etat = fusionner(etat, emb); distantMajAt = Math.max(distantMajAt, emb.majAt || 0); }
+  } catch(e){}
+  rendre();
+  elSaisie.focus();
+
+  fetch("data/etat.json", { cache:"no-store" })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if(d && d.v){ etat = fusionner(etat, d); distantMajAt = Math.max(distantMajAt, d.majAt || 0); ecrireLocal(); rendre(); }
+    })
+    .catch(function(){})
+    .then(brancherSauvegarde);
+}
+
+function brancherSauvegarde(){
+  if(!(window.claude && claude.use)) return;
+  claude.use("artifact").then(function(a){
+    if(!a) return;
+    artefact = a;
+    setSync("ok", "sauvé");
+    if((etat.majAt || 0) > distantMajAt && (etat.articles.length || etat.taches.length || etat.recettes.length)){
+      sauver();
+    }
+  }).catch(function(){});
+}
+
+demarrer();
+})();
+</script>
