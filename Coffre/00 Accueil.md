@@ -5,9 +5,10 @@ type: accueil
 # Accueil
 
 ```dataviewjs
-const a = dv.pages('"01 Achats"').where(p => p.type === "achat" && p.statut !== "acheté");
-const t = dv.pages('"02 Tâches"').file.tasks.where(x => !x.completed);
-const p = dv.pages('"03 Cuisine/Plats"');
+const hors = p => !String(p.file.path).includes("Modèles");
+const a = dv.pages().where(p => hors(p) && p.type === "achat" && p.statut !== "acheté");
+const t = dv.pages("#coffre").where(hors).file.tasks.where(x => !x.completed);
+const p = dv.pages().where(x => hors(x) && x.type === "plat");
 dv.paragraph("**" + t.length + "** choses à faire · **" + a.length + "** à acheter · **" + p.length + "** plats");
 ```
 
@@ -15,16 +16,15 @@ dv.paragraph("**" + t.length + "** choses à faire · **" + a.length + "** à ac
 
 ```dataview
 TASK
-FROM "02 Tâches"
-WHERE !completed
+FROM #coffre
+WHERE !completed AND !contains(file.path, "Modèles")
 ```
 
 ## À acheter
 
 ```dataview
 TABLE WITHOUT ID file.link AS "Objet", pour AS "Pourquoi", prix AS "Prix"
-FROM "01 Achats"
-WHERE type = "achat" AND statut != "acheté"
+WHERE type = "achat" AND statut != "acheté" AND !contains(file.path, "Modèles")
 SORT urgence DESC
 LIMIT 8
 ```
@@ -37,7 +37,7 @@ LIMIT 8
 
 ```dataview
 TABLE WITHOUT ID file.link AS "Plat", temps AS "Minutes", note AS "★"
-FROM "03 Cuisine/Plats"
+WHERE type = "plat" AND !contains(file.path, "Modèles")
 SORT file.mtime DESC
 LIMIT 5
 ```

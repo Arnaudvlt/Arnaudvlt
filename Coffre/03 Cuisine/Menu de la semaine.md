@@ -139,7 +139,7 @@ for(const t of (courant.file.tasks || [])){
 
 /* index des rayons déclarés dans les notes d'ingrédient */
 const idxRayon = new Map();
-for(const p of dv.pages('"03 Cuisine/Ingrédients"')){
+for(const p of dv.pages().where(x => x.type === "ingredient")){
   if(!p.rayon) continue;
   idxRayon.set(cle(p.file.name), String(p.rayon));
   let al = p.aliases || p.alias;
@@ -166,8 +166,8 @@ for(const c of choisis){
 }
 
 /* + les achats marqués « courses » */
-const achats = dv.pages('"01 Achats"')
-  .where(p => p.type === "achat" && p.courses === true && String(p.statut || "") !== "acheté");
+const achats = dv.pages().where(p => p.type === "achat" && p.courses === true
+  && String(p.statut || "") !== "acheté" && !String(p.file.path).includes("Modèles"));
 for(const a of achats){
   entrees.push({q:null, u:"", nom:a.file.name, origine:"à acheter", rayon:rayonDe(a.file.name, a.rayon)});
 }

@@ -1,5 +1,6 @@
 ---
 type: achat
+tags: [coffre]
 statut: à acheter
 prix: 129
 lien: https://rode.com/fr/microphones/wireless/wirelessme

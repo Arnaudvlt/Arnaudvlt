@@ -6,8 +6,10 @@ simplement ce qui tombe quand on croise les trois.
 
 ## Installation
 
-1. Obsidian → *Ouvrir un dossier comme coffre* → choisir ce dossier `Coffre`.
-   (Ou copier son contenu dans un coffre existant.)
+1. **Soit** Obsidian → *Ouvrir un dossier comme coffre* → choisir ce dossier
+   `Coffre` : il devient un coffre à lui seul.
+   **Soit** glisser ces dossiers dans un coffre existant, à la racine ou dans un
+   sous-dossier, peu importe la profondeur.
 2. *Paramètres → Modules complémentaires* → installer et activer **Dataview**.
 3. Dans les options de Dataview, activer **Enable JavaScript Queries**.
    Sans ça, la liste de courses ne se construit pas.
@@ -16,6 +18,43 @@ simplement ce qui tombe quand on croise les trois.
 
 Sans Dataview, rien n'est perdu : les notes restent du markdown lisible, seules
 les listes automatiques ne s'affichent pas.
+
+### Rien ne dépend de l'emplacement des dossiers
+
+Les listes automatiques ne cherchent pas dans des dossiers, elles cherchent des
+**notes qui portent un `type`**. Tu peux donc renommer les dossiers, les
+déplacer, les imbriquer dans `Vie perso/Maison/…` : tout continue de marcher.
+Seule règle : un dossier dont le nom contient « Modèles » est ignoré partout,
+ce qui évite que les modèles vides apparaissent dans tes listes.
+
+Une exception, les tâches : celles qui remontent dans l'Accueil sont celles des
+notes marquées `tags: [coffre]`. C'est ce qui permet de mélanger ce système avec
+un autre projet dans le même coffre sans que les deux listes de tâches se
+mélangent. L'Inbox et les notes d'achat portent déjà ce tag.
+
+## Cohabiter avec un projet déjà en cours
+
+Dans Obsidian, un **coffre** est simplement un dossier sur ton disque. Il n'y a
+rien à « fermer » ni à archiver : un coffre reste ce qu'il est, tu changes juste
+celui que tu regardes. Deux façons de faire, et elles ne s'excluent pas.
+
+**Un seul coffre, deux dossiers** — c'est ce que je te conseille. Ton projet
+existant reste dans son dossier, ce système va dans le sien, et les deux se
+retrouvent dans la même fenêtre. L'intérêt est réel : tu peux écrire
+`- [ ] racheter des piles pour [[Tournage du 12 septembre]]` et lier un achat
+perso à une note de ton projet. La recherche, les liens et le graphe couvrent
+tout. Pour ne pas mélanger visuellement, le module de base **Espaces de travail**
+enregistre une disposition de fenêtres par projet, et tu passes de l'une à
+l'autre en deux clics.
+
+**Deux coffres séparés** — à préférer seulement si le projet existant est du
+travail que tu veux tenir strictement à part, ou s'il est déjà énorme. Le
+sélecteur de coffre est l'icône en bas à gauche de la barre latérale ; tu peux
+aussi faire *Ctrl/Cmd + P* → « Ouvrir un autre coffre ». Les deux peuvent rester
+ouverts en même temps dans deux fenêtres. Le prix à payer : aucun lien possible
+entre les deux, et les modules doivent être installés des deux côtés.
+
+Dans les deux cas, ton projet actuel n'est pas touché.
 
 ## Comment c'est rangé
 
@@ -117,6 +156,7 @@ le navigateur d'Obsidian, pas dans le fichier, donc ça ne pollue pas la note.
   lien, écrire la phrase `pour:`. Trente secondes.
 - **Un truc à faire** → une ligne dans `02 Tâches/Inbox`. Si ça concerne un objet,
   mettre le lien : `- [ ] vérifier l'USB-C avant [[Micro-cravate Rode Wireless ME]]`.
+  Les cases à cocher écrites dans une note d'achat remontent aussi dans l'Accueil.
 - **Un plat réussi** → nouvelle note dans `03 Cuisine/Plats`, ingrédients dans les
   propriétés, étapes dans le corps.
 - **Dimanche soir** → cocher trois ou quatre plats, la liste est prête.

@@ -1,5 +1,6 @@
 ---
 type: achat
+tags: [coffre]
 statut: à acheter
 prix: 29
 lien: https://www.typology.com

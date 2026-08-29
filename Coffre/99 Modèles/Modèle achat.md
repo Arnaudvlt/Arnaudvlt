@@ -1,5 +1,6 @@
 ---
 type: achat
+tags: [coffre]
 statut: à acheter
 prix:
 lien:
@@ -12,4 +13,3 @@ pour:
 
 Pourquoi je le veux, où je l'ai vu, ce qui reste à vérifier.
 
-- [ ] 

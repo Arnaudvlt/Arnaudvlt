@@ -1,5 +1,6 @@
 ---
 type: achat
+tags: [coffre]
 statut: à acheter
 prix:
 lien:

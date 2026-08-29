@@ -1,5 +1,6 @@
 ---
 type: inbox
+tags: [coffre]
 ---
 
 # Inbox
