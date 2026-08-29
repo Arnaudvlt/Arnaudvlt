@@ -61,11 +61,23 @@ v("l'édition en ligne enregistre", (await page.locator("#vue-taches").textConte
 console.log("\nAchats");
 await page.click('.onglet[data-onglet="achats"]');
 await page.waitForTimeout(150);
-v("le total des achats est affiché", (await page.locator("#vue-achats .tete p").textContent()).includes("327 €"));
-v("le lien de référence est présent et sécurisé",
+v("les 19 achats de la liste sont présents", await page.locator("#vue-achats .ligne").count() === 19);
+const enTetes = await page.locator("#vue-achats .groupe > h2").allTextContents();
+v("ils sont regroupés par catégorie",
+  ["Soin", "Vêtements", "Équipement"].every(c => enTetes.some(t => t.startsWith(c))), enTetes.join(" | "));
+v("l'entête annonce le compte", (await page.locator("#vue-achats .tete p").textContent()).includes("19 articles"));
+
+await page.fill('[data-form="achat-ajout"] [name="texte"]', "Sac de sport");
+await page.fill('[data-form="achat-ajout"] [name="categorie"]', "Équipement");
+await page.fill('[data-form="achat-ajout"] [name="lien"]', "https://example.com/sac");
+await page.fill('[data-form="achat-ajout"] [name="prix"]', "60");
+await page.click('[data-form="achat-ajout"] button[type="submit"]');
+await page.waitForTimeout(150);
+const grpEquip = page.locator("#vue-achats .groupe", { hasText: "Équipement" });
+v("l'achat ajouté rejoint sa catégorie", (await grpEquip.textContent()).includes("Sac de sport"));
+v("le lien saisi est rendu et sécurisé",
   await page.locator('#vue-achats a[target="_blank"][rel="noopener noreferrer"]').count() === 1);
-v("les priorités sont triées en tête",
-  (await page.locator("#vue-achats .ligne").first().textContent()).includes("Casque"));
+v("le total n'apparaît qu'avec un prix", (await page.locator("#vue-achats .tete p").textContent()).includes("60 €"));
 
 console.log("\nRecettes et mise à l'échelle");
 await page.click('.onglet[data-onglet="recettes"]');
@@ -174,10 +186,24 @@ await page.waitForTimeout(200);
 await page.selectOption('[data-a="theme"]', "dark");
 await page.waitForTimeout(150);
 v("le thème sombre s'applique", await page.evaluate(() => document.documentElement.dataset.theme === "dark"));
+// luminance relative, pour ne pas coder en dur des valeurs de palette
+const lum = (css) => { const [r, g, b] = css.match(/\d+/g).map(Number);
+  const f = (c) => { c /= 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); };
+  return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
+const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+  return (x + .05) / (y + .05); };
 const fond = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-v("le fond du corps est peint en sombre", fond === "rgb(17, 24, 21)", fond);
-const contraste = await page.evaluate(() => getComputedStyle(document.querySelector(".tete h1")).color);
-v("le texte reste clair sur fond sombre", contraste === "rgb(231, 235, 229)", contraste);
+const texte = await page.evaluate(() => getComputedStyle(document.querySelector(".tete h1")).color);
+v("le corps peint bien un fond sombre", lum(fond) < .1, fond);
+v("le titre contraste largement avec ce fond", contraste(fond, texte) > 12,
+  fond + " / " + texte + " → " + contraste(fond, texte).toFixed(1) + ":1");
+const btn = await page.evaluate(() => { const b = document.querySelector(".btn-plein");
+  const s = getComputedStyle(b); return [s.backgroundColor, s.color]; });
+v("le bouton principal reste lisible en thème sombre", contraste(btn[0], btn[1]) >= 4.5,
+  btn.join(" / ") + " → " + contraste(btn[0], btn[1]).toFixed(1) + ":1");
+const doux = await page.evaluate(() => getComputedStyle(document.querySelector(".tete p")).color);
+v("le texte secondaire tient le seuil AA", contraste(fond, doux) >= 4.5,
+  doux + " → " + contraste(fond, doux).toFixed(1) + ":1");
 await page.click('#dlg-reglages [data-a="fermer"]');
 await page.waitForTimeout(150);
 
@@ -197,6 +223,30 @@ await page.emulateMedia({ colorScheme: "dark" });
 await page.click('.onglet[data-onglet="courses"]');
 await page.waitForTimeout(300);
 await page.screenshot({ path: "apercu-sombre.png", fullPage: true });
+
+console.log("\nMigration d'un état déjà en place");
+await page.evaluate(() => {
+  localStorage.setItem("intendance:v1", JSON.stringify({
+    v: 1, maj: Date.now(),
+    taches: [{id:"perso1", texte:"Ma tâche à moi", contexte:"", echeance:"", fait:false}],
+    achats: [{id:"a1", texte:"Casque audio", fait:false}, {id:"perso2", texte:"Mon achat à moi", fait:false}],
+    recettes: [], menu: [], extras: [], rayons: {}, coches: {}
+  }));
+  localStorage.setItem("intendance:onglet", "achats");
+});
+await page.reload();
+await page.waitForTimeout(500);
+const apresMigration = await page.locator("#vue-achats").textContent();
+v("les données déjà saisies sont conservées", apresMigration.includes("Mon achat à moi"));
+v("les nouveaux achats sont ajoutés", apresMigration.includes("Bleu de Chanel") && apresMigration.includes("Henley"));
+v("les exemples de départ sont retirés", !apresMigration.includes("Casque audio"));
+await page.click('.onglet[data-onglet="taches"]');
+await page.waitForTimeout(150);
+v("les tâches existantes survivent", (await page.locator("#vue-taches").textContent()).includes("Ma tâche à moi"));
+await page.reload();
+await page.waitForTimeout(500);
+v("la migration ne se rejoue pas au rechargement",
+  (await page.locator('.onglet[data-onglet="achats"] .compte').textContent()) === "20");
 
 console.log("\nErreurs JS accumulées : " + (erreurs.length ? "\n  " + erreurs.join("\n  ") : "aucune"));
 v("aucune erreur JavaScript sur tout le parcours", erreurs.length === 0);

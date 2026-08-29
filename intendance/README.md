@@ -14,6 +14,18 @@ l'échelle, additionnées entre recettes, regroupées par rayon. Un repas coché
 sort. Les unités incompatibles ne sont jamais additionnées ; un article sans unité s'arrondit
 au supérieur (on n'achète pas 3,5 oignons).
 
+## Interface
+
+Système de design **shadcn/ui**, écrit en CSS — c'est son mode de distribution : on copie le
+composant, on le possède. Jetons `--background / --foreground / --muted / --border / --ring /
+--radius` en canaux HSL, base neutre zinc, primaire quasi-noire, `--destructive` pour le rouge,
+rayon 8 px, police Geist.
+
+Les bibliothèques à charger depuis un CDN ont été écartées volontairement : le bac à sable des
+Artifacts n'autorise de feuille de style externe que depuis Google Fonts, ce qui exclut Shoelace,
+Flowbite et Carbon ; et le CDN Tailwind, lui autorisé, n'est pas joignable depuis l'environnement
+de développement, donc impossible à vérifier avant publication.
+
 ## Sauvegarde
 
 - **`localStorage`** à chaque modification : instantané, survit au rechargement.
@@ -32,8 +44,10 @@ Hors plateforme (fichier ouvert en local), la capacité n'existe pas : l'app bas
 NODE_PATH=/opt/node22/lib/node_modules node intendance/test-ui.mjs
 ```
 
-46 vérifications dans Chromium via Playwright : parcours complet (ajout, édition en ligne,
+56 vérifications dans Chromium via Playwright : parcours complet (ajout, édition en ligne,
 regroupement par échéance, tri des achats, mise à l'échelle des portions, agrégation des
-courses, création de recette, persistance après rechargement), plus thème sombre, absence de
-débordement horizontal en 390 px et absence d'erreur JavaScript. Le script écrit aussi
+courses, création de recette, persistance après rechargement), regroupement des achats par
+catégorie, migration de graine sur un état déjà enregistré, contrastes mesurés en thème sombre
+(ratios calculés, pas de couleur codée en dur), absence de débordement horizontal en 390 px et
+absence d'erreur JavaScript. Le script écrit aussi
 `apercu-clair.png` et `apercu-sombre.png`.
