@@ -14,6 +14,7 @@ const v = (nom, cond, det = "") => { if (cond) { ok++; console.log("  ✔ " + no
 
 const nav = await chromium.launch();
 const page = await nav.newPage({ viewport: { width: 1280, height: 900 } });
+page.on("dialog", d => d.accept());   // les confirmations de suppression
 const erreurs = [];
 page.on("pageerror", e => erreurs.push("pageerror: " + e.message));
 // Les Google Fonts ne sont pas joignables depuis ce bac à sable ; ce n'est pas une erreur de la page.
@@ -25,7 +26,7 @@ await page.waitForTimeout(700);
 
 console.log("\nDémarrage");
 v("aucune erreur JavaScript", erreurs.length === 0, erreurs.join("\n      → "));
-v("les 5 onglets sont rendus", await page.locator(".onglet").count() === 5);
+v("les 5 sections de base sont rendues", await page.locator('#nav .onglet[data-onglet]').count() === 5);
 v("la vue Tâches est active", await page.locator("#vue-taches").isVisible());
 v("les autres vues sont masquées", !(await page.locator("#vue-achats").isVisible()));
 v("le statut de sauvegarde est honnête hors plateforme",
@@ -181,8 +182,9 @@ v("l'onglet actif est mémorisé", await page.locator("#vue-courses").isVisible(
 v("les coches survivent au rechargement", await page.locator("#vue-courses .ligne.finie").count() >= 1);
 
 console.log("\nRéglages, thème, mobile");
-await page.click('[data-a="reglages"]');
-await page.waitForTimeout(200);
+await page.click('[data-onglet="reglages"]');
+await page.waitForTimeout(250);
+v("les réglages s'ouvrent en pleine page, pas en fenêtre", await page.locator("#vue-reglages").isVisible());
 await page.selectOption('[data-a="theme"]', "dark");
 await page.waitForTimeout(150);
 v("le thème sombre s'applique", await page.evaluate(() => document.documentElement.dataset.theme === "dark"));
@@ -192,6 +194,9 @@ const lum = (css) => { const [r, g, b] = css.match(/\d+/g).map(Number);
   return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
 const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
   return (x + .05) / (y + .05); };
+// on mesure sur une vue qui porte un bouton principal
+await page.click('.onglet[data-onglet="taches"]');
+await page.waitForTimeout(200);
 const fond = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 const texte = await page.evaluate(() => getComputedStyle(document.querySelector(".tete h1")).color);
 v("le corps peint bien un fond sombre", lum(fond) < .1, fond);
@@ -204,8 +209,6 @@ v("le bouton principal reste lisible en thème sombre", contraste(btn[0], btn[1]
 const doux = await page.evaluate(() => getComputedStyle(document.querySelector(".tete p")).color);
 v("le texte secondaire tient le seuil AA", contraste(fond, doux) >= 4.5,
   doux + " → " + contraste(fond, doux).toFixed(1) + ":1");
-await page.click('#dlg-reglages [data-a="fermer"]');
-await page.waitForTimeout(150);
 
 await page.setViewportSize({ width: 390, height: 780 });
 await page.waitForTimeout(250);
@@ -223,6 +226,112 @@ await page.emulateMedia({ colorScheme: "dark" });
 await page.click('.onglet[data-onglet="courses"]');
 await page.waitForTimeout(300);
 await page.screenshot({ path: "apercu-sombre.png", fullPage: true });
+
+console.log("\nListes sur mesure");
+await page.click('.onglet[data-onglet="taches"]');
+await page.click('[data-a="liste-neuve"]');
+await page.waitForTimeout(200);
+v("la nouvelle liste s'ouvre directement en renommage", await page.locator('[data-form="liste-nom"]').count() === 1);
+await page.fill('[data-form="liste-nom"] [name="nom"]', "Films à voir");
+await page.click('[data-form="liste-nom"] button[type="submit"]');
+await page.waitForTimeout(200);
+v("elle porte le nom saisi", (await page.locator("main h1").textContent()) === "Films à voir");
+v("elle rejoint la navigation", (await page.locator("#nav").textContent()).includes("Films à voir"));
+await page.fill('[data-form="liste-item-ajout"] [name="texte"]', "Le Samouraï");
+await page.click('[data-form="liste-item-ajout"] button[type="submit"]');
+await page.waitForTimeout(180);
+v("un élément s'y ajoute", (await page.locator("main .pile").textContent()).includes("Le Samouraï"));
+v("le compteur du rail suit", (await page.locator('#nav .onglet[aria-current="true"] .compte').textContent()) === "1");
+await page.locator("main .ligne").first().locator("input[type=checkbox]").click();
+await page.waitForTimeout(180);
+v("cocher range l'élément dans les terminés",
+  (await page.locator("main details.fini").textContent()).includes("Le Samouraï"));
+await page.reload();
+await page.waitForTimeout(500);
+v("la liste survit au rechargement", (await page.locator("#nav").textContent()).includes("Films à voir"));
+
+console.log("\nRéglages : listes d'options modifiables");
+await page.click('[data-onglet="reglages"]');
+await page.waitForTimeout(250);
+v("chaque famille de réglages a son bloc", await page.locator(".bloc").count() === 8,
+  (await page.locator(".bloc > h2").allTextContents()).join(" | "));
+
+const blocRayons = page.locator('[data-bloc="rayons"]');
+const nomsAvant = await blocRayons.locator(".opt-ligne .nom").allTextContents();
+await blocRayons.locator(".opt-ligne").nth(1).locator('[data-a="option-monter"]').click();
+await page.waitForTimeout(200);
+const nomsApres = await blocRayons.locator(".opt-ligne .nom").allTextContents();
+v("un rayon se remonte dans l'ordre",
+  nomsApres[0] === nomsAvant[1] && nomsApres[1] === nomsAvant[0], nomsApres.slice(0, 3).join(" / "));
+v("la première flèche du haut est désactivée",
+  await blocRayons.locator(".opt-ligne").first().locator('[data-a="option-monter"]').isDisabled());
+
+await blocRayons.locator('[data-a="option-renommer"]').nth(1).click();
+await page.waitForTimeout(180);
+await page.fill('[data-form="option-renommer"] [name="valeur"]', "Primeur");
+await page.click('[data-form="option-renommer"] button[type="submit"]');
+await page.waitForTimeout(220);
+v("le rayon est renommé", (await blocRayons.textContent()).includes("Primeur"));
+await page.click('.onglet[data-onglet="courses"]');
+await page.waitForTimeout(220);
+v("le renommage se propage aux ingrédients déjà classés",
+  (await page.locator("#vue-courses").textContent()).includes("Primeur"));
+
+await page.click('[data-onglet="reglages"]');
+await page.waitForTimeout(220);
+await page.fill('[data-form="option-ajout"][data-cle="rayons"] [name="valeur"]', "Cave");
+await page.click('[data-form="option-ajout"][data-cle="rayons"] button[type="submit"]');
+await page.waitForTimeout(220);
+await page.click('.onglet[data-onglet="courses"]');
+await page.waitForTimeout(220);
+v("un rayon ajouté est proposé pour les extras",
+  (await page.locator('[data-form="extra-ajout"] [name="rayon"]').textContent()).includes("Cave"));
+
+await page.click('[data-onglet="reglages"]');
+await page.waitForTimeout(220);
+await page.fill('[data-form="option-ajout"][data-cle="moments"] [name="valeur"]', "Petit-déjeuner");
+await page.click('[data-form="option-ajout"][data-cle="moments"] button[type="submit"]');
+await page.waitForTimeout(200);
+await page.fill('[data-form="option-ajout"][data-cle="unites"] [name="valeur"]', "botte");
+await page.click('[data-form="option-ajout"][data-cle="unites"] button[type="submit"]');
+await page.waitForTimeout(200);
+await page.fill('[data-form="option-ajout"][data-cle="categoriesRecette"] [name="valeur"]', "Apéro");
+await page.click('[data-form="option-ajout"][data-cle="categoriesRecette"] button[type="submit"]');
+await page.waitForTimeout(200);
+await page.fill('[data-form="priorite"][data-cle="haute"] [name="nom"]', "Urgent");
+await page.click('[data-form="priorite"][data-cle="haute"] button[type="submit"]');
+await page.waitForTimeout(220);
+
+await page.click('.onglet[data-onglet="menu"]');
+await page.waitForTimeout(200);
+v("un moment de repas ajouté est planifiable",
+  (await page.locator('[data-form="menu-ajout"] [name="moment"]').textContent()).includes("Petit-déjeuner"));
+await page.click('.onglet[data-onglet="achats"]');
+await page.waitForTimeout(200);
+v("une priorité renommée s'emploie dans le formulaire",
+  (await page.locator('[data-form="achat-ajout"] [name="priorite"]').textContent()).includes("Urgent"));
+await page.click('.onglet[data-onglet="recettes"]');
+await page.click('[data-a="recette-neuve"]');
+await page.waitForTimeout(250);
+v("une catégorie ajoutée est proposée dans une recette",
+  (await page.locator('#dlg-recette [name="categorie"]').textContent()).includes("Apéro"));
+v("une unité ajoutée rejoint les suggestions",
+  (await page.locator("#unites").innerHTML()).includes('value="botte"'));
+await page.click('#dlg-recette [data-a="fermer"]');
+await page.waitForTimeout(150);
+
+await page.click('[data-onglet="reglages"]');
+await page.waitForTimeout(220);
+const avantSuppr = await blocRayons.locator(".opt-ligne").count();
+await blocRayons.locator('.opt-ligne', { hasText: "Primeur" }).locator('[data-a="option-suppr"]').click();
+await page.waitForTimeout(250);
+v("un rayon employé se supprime après confirmation",
+  await blocRayons.locator(".opt-ligne").count() === avantSuppr - 1);
+await page.click('.onglet[data-onglet="courses"]');
+await page.waitForTimeout(220);
+const txtCourses = await page.locator("#vue-courses").textContent();
+v("ses articles sont réaffectés, aucun n'est perdu",
+  !txtCourses.includes("Primeur") && txtCourses.includes("Courgette") && txtCourses.includes("Blanc de poulet"));
 
 console.log("\nMigration d'un état déjà en place");
 await page.evaluate(() => {

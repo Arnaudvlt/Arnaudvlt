@@ -297,8 +297,32 @@ label.lab > span:first-child{color:hsl(var(--foreground))}
 .grille{display:grid; grid-template-columns:repeat(auto-fit, minmax(130px,1fr)); gap:14px}
 .ing-ligne{display:grid; grid-template-columns:68px 96px minmax(0,1fr) 138px 28px; gap:6px; align-items:center}
 
+/* -------------------------------------------------------------- réglages */
+.reglages{columns:2; column-gap:36px}
+.bloc{break-inside:avoid; display:block; margin-bottom:32px}
+.bloc > h2{font-size:15px; margin-bottom:3px}
+.bloc > .aide{margin:0 0 12px; color:hsl(var(--muted-foreground)); font-size:13px}
+.bloc .ajout{margin:10px 0 0; padding:0; border:0; background:none; box-shadow:none}
+.opt-ligne{
+  display:flex; align-items:center; gap:8px; padding:6px 10px 6px 6px; min-height:44px;
+  border-bottom:1px solid hsl(var(--border));
+}
+.opt-ligne:last-child{border-bottom:0}
+.opt-ligne .nom{flex:1; min-width:0; overflow-wrap:anywhere}
+.opt-ligne .fleches{display:flex; flex-direction:column}
+.opt-ligne .fleches .btn-nu{width:24px; height:18px}
+.opt-ligne .fleches .btn-nu svg{width:14px; height:14px}
+.btn-nu:disabled{opacity:.3; cursor:default}
+.btn-nu:disabled:hover{background:none; color:hsl(var(--muted-foreground))}
+.onglet.ajout-liste{color:hsl(var(--muted-foreground)); font-weight:400}
+.alerte{
+  margin:0 0 18px; padding:10px 14px; font-size:13px; max-width:720px;
+  border:1px solid hsl(var(--border)); border-radius:calc(var(--radius) - 2px); background:hsl(var(--muted)/.5);
+}
+.alerte.err{border-color:hsl(var(--destructive)/.4); color:hsl(var(--destructive-fg)); background:hsl(var(--destructive)/.08)}
+
 /* --------------------------------------------------------------- mobile */
-@media (max-width:920px){ .duo{grid-template-columns:1fr} .rayons{columns:1} }
+@media (max-width:920px){ .duo{grid-template-columns:1fr} .rayons, .reglages{columns:1} }
 @media (max-width:760px){
   body{grid-template-columns:1fr}
   main{padding:20px 16px 96px}
@@ -319,22 +343,15 @@ label.lab > span:first-child{color:hsl(var(--foreground))}
   <div class="marque"><span class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M5 7l1.4 11.2A2 2 0 0 0 8.4 20h7.2a2 2 0 0 0 2-1.8L19 7"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></span><b>Intendance</b></div>
   <nav id="nav"></nav>
   <div class="rail-pied">
-    <button class="btn" data-a="reglages">Réglages</button>
+    <div id="nav-pied"></div>
     <span class="sauv" id="sauv"><i></i><span>Prêt</span></span>
   </div>
 </aside>
 
-<main>
-  <section class="vue" id="vue-taches"></section>
-  <section class="vue" id="vue-achats" hidden></section>
-  <section class="vue" id="vue-recettes" hidden></section>
-  <section class="vue" id="vue-menu" hidden></section>
-  <section class="vue" id="vue-courses" hidden></section>
-</main>
+<main></main>
 
 <dialog id="dlg-recette"></dialog>
 <dialog id="dlg-planif"></dialog>
-<dialog id="dlg-reglages"></dialog>
 
 <script id="etat" type="application/json">
 {"v":1,"maj":0,"graine":2,"retirer":["a1","a2","a3"],
@@ -383,11 +400,7 @@ label.lab > span:first-child{color:hsl(var(--foreground))}
  "coches":{}}
 </script>
 
-<datalist id="unites">
-  <option value="g"></option><option value="kg"></option><option value="ml"></option><option value="cl"></option>
-  <option value="l"></option><option value="c. à s."></option><option value="c. à c."></option><option value="pincée"></option>
-  <option value="gousses"></option><option value="tranches"></option><option value="cube"></option><option value="boîte"></option>
-</datalist>
+<datalist id="unites"></datalist>
 
 <script>
 (function(){
@@ -397,12 +410,47 @@ label.lab > span:first-child{color:hsl(var(--foreground))}
 const CLE_ETAT = "intendance:v1", CLE_ONGLET = "intendance:onglet", CLE_THEME = "intendance:theme";
 const FICHIER = "data/etat.json";
 
-const RAYONS = ["Fruits & légumes","Boucherie","Poissonnerie","Crèmerie","Boulangerie","Épicerie",
-                "Surgelés","Boissons","Maison","Garde-manger","Divers"];
 const JOURS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
-const MOMENTS = ["Midi","Soir"];
-const CATEGORIES = ["Entrée","Plat","Dessert","Petit-déjeuner"];
-const PRIORITES = {haute:"Prioritaire", normale:"Normal", basse:"Un jour"};
+
+// Tout ce qui suit n'est qu'un point de départ : ces listes se modifient dans Réglages.
+const DEFAUTS = {
+  rayons: ["Fruits & légumes","Boucherie","Poissonnerie","Crèmerie","Boulangerie","Épicerie",
+           "Surgelés","Boissons","Maison","Garde-manger","Divers"],
+  moments: ["Midi","Soir"],
+  categoriesRecette: ["Entrée","Plat","Dessert","Petit-déjeuner"],
+  unites: ["g","kg","ml","cl","l","c. à s.","c. à c.","pincée","gousses","tranches","cube","boîte"]
+};
+const PRIORITES_DEF = [{cle:"haute", nom:"Prioritaire"}, {cle:"normale", nom:"Normal"}, {cle:"basse", nom:"Un jour"}];
+
+// Où chaque liste est employée : sert à propager un renommage et à rattraper une suppression.
+const USAGES = {
+  rayons: {
+    titre: "Rayons",
+    aide: "L'ordre ci-dessous est celui de ta liste de courses.",
+    renommer: (av, ap) => { for (const k in etat.rayons) if (etat.rayons[k] === av) etat.rayons[k] = ap;
+                            etat.extras.forEach(x => { if (x.rayon === av) x.rayon = ap; }); },
+    compter: (v) => Object.values(etat.rayons).filter(r => r === v).length +
+                    etat.extras.filter(x => x.rayon === v).length
+  },
+  moments: {
+    titre: "Moments de repas",
+    aide: "Midi, Soir, mais aussi Petit-déjeuner ou Goûter si tu veux les planifier.",
+    renommer: (av, ap) => etat.menu.forEach(m => { if (m.moment === av) m.moment = ap; }),
+    compter: (v) => etat.menu.filter(m => m.moment === v).length
+  },
+  categoriesRecette: {
+    titre: "Catégories de recettes",
+    aide: "Proposées dans le formulaire d'une recette.",
+    renommer: (av, ap) => etat.recettes.forEach(r => { if (r.categorie === av) r.categorie = ap; }),
+    compter: (v) => etat.recettes.filter(r => r.categorie === v).length
+  },
+  unites: {
+    titre: "Unités",
+    aide: "Suggérées quand tu saisis un ingrédient. Tu peux toujours en taper une autre.",
+    renommer: (av, ap) => etat.recettes.forEach(r => r.ingredients.forEach(i => { if (i.unite === av) i.unite = ap; })),
+    compter: (v) => etat.recettes.reduce((n, r) => n + r.ingredients.filter(i => i.unite === v).length, 0)
+  }
+};
 
 const I = {
   taches:'<path d="M20 6 9 17l-5-5"/>',
@@ -410,6 +458,11 @@ const I = {
   recettes:'<path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Z"/><path d="M4 17a3 3 0 0 1 3-3h11"/>',
   menu:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/>',
   courses:'<path d="M5 9h14l-1.4 10.3a2 2 0 0 1-2 1.7H8.4a2 2 0 0 1-2-1.7L5 9Z"/><path d="m9 9 3-6 3 6"/>',
+  liste:'<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  reglages:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.7 8a1.7 1.7 0 0 0-.4-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V8a1.7 1.7 0 0 0 1.5 1H22a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  haut:'<path d="m6 15 6-6 6 6"/>',
+  bas:'<path d="m6 9 6 6 6-6"/>',
   crayon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   poubelle:'<path d="M3 6h18M8 6V4h8v2M18.5 6l-1 13.5H6.5L5.5 6"/>',
   lien:'<path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M20 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5"/>'
@@ -434,10 +487,14 @@ const euros = (n) => nb(n) + " €";
 const jourISO = (d) => { const x = d || new Date(); return new Date(x.getTime() - x.getTimezoneOffset()*6e4).toISOString().slice(0,10); };
 const dateCourte = (iso) => new Date(iso + "T12:00:00")
   .toLocaleDateString("fr-FR", {weekday:"short", day:"numeric", month:"short"});
-const rayonDe = (nom) => etat.rayons[String(nom).toLowerCase().trim()] || "Divers";
-const rangRayon = (r) => { const i = RAYONS.indexOf(r); return i < 0 ? 99 : i; };
-const optionsRayon = (sel) => RAYONS.map(r =>
-  '<option value="' + esc(r) + '"' + (r === sel ? " selected" : "") + '>' + esc(r) + '</option>').join("");
+const OPT = (cle) => etat.options[cle];
+const rayonRepli = () => { const l = OPT("rayons"); return l.includes("Divers") ? "Divers" : (l[l.length - 1] || "Divers"); };
+const rayonDe = (nom) => etat.rayons[String(nom).toLowerCase().trim()] || rayonRepli();
+const rangRayon = (r) => { const i = OPT("rayons").indexOf(r); return i < 0 ? 999 : i; };
+const options = (liste, sel) => liste.map(v =>
+  '<option value="' + esc(v) + '"' + (v === sel ? " selected" : "") + '>' + esc(v) + '</option>').join("");
+const optionsRayon = (sel) => options(OPT("rayons"), sel);
+const nomPriorite = (cle) => (etat.priorites.find(p => p.cle === cle) || {}).nom || "";
 
 /* ================================================================= état */
 const base = JSON.parse($("#etat").textContent);
@@ -448,6 +505,21 @@ function normaliser(e){
   e.graine = Number(e.graine) || 0;
   for (const c of ["taches","achats","recettes","menu","extras"]) if (!Array.isArray(e[c])) e[c] = [];
   for (const c of ["rayons","coches"]) if (!e[c] || typeof e[c] !== "object") e[c] = {};
+  if (!e.options || typeof e.options !== "object") e.options = {};
+  for (const cle in DEFAUTS) {
+    const l = e.options[cle];
+    e.options[cle] = (Array.isArray(l) ? l.map(x => String(x).trim()).filter(Boolean) : []);
+    if (!e.options[cle].length) e.options[cle] = DEFAUTS[cle].slice();
+  }
+  e.priorites = PRIORITES_DEF.map(d => {
+    const v = Array.isArray(e.priorites) ? e.priorites.find(x => x && x.cle === d.cle) : null;
+    return {cle: d.cle, nom: (v && String(v.nom).trim()) || d.nom};
+  });
+  if (!Array.isArray(e.listes)) e.listes = [];
+  e.listes = e.listes.filter(l => l && l.id).map(l => ({
+    id: l.id, nom: String(l.nom || "Liste"),
+    items: Array.isArray(l.items) ? l.items.filter(i => i && i.id) : []
+  }));
   e.recettes.forEach(r => { if (!Array.isArray(r.ingredients)) r.ingredients = [];
                             if (!Array.isArray(r.etapes)) r.etapes = []; });
   return e;
@@ -483,6 +555,7 @@ let recetteVue = etat.recettes.length ? etat.recettes[0].id : null;
 let portionsVue = null;
 let edition = null;
 let focusCible = null;
+let flash = null;
 let touche = false;
 
 /* ========================================================= persistance */
@@ -535,21 +608,28 @@ async function pousser(){
 
 /* ============================================================ rendu nav */
 function compteurs(){
-  return {
+  const c = {
     taches: etat.taches.filter(t => !t.fait).length,
     achats: etat.achats.filter(a => !a.fait).length,
     recettes: etat.recettes.length,
     menu: etat.menu.filter(m => !m.fait).length,
     courses: articlesCourses().filter(a => !a.coche).length
   };
+  for (const l of etat.listes) c["liste:" + l.id] = l.items.filter(i => !i.fait).length;
+  return c;
+}
+function bouton(id, nom, icone, c){
+  return '<button class="onglet" data-onglet="' + esc(id) + '" aria-current="' + (id === onglet) + '">' +
+    svg(icone) + '<span>' + esc(nom) + '</span>' +
+    (c ? '<span class="compte">' + c + '</span>' : '') + '</button>';
 }
 function rendreNav(){
   const c = compteurs();
-  $("#nav").innerHTML = ONGLETS.map(o =>
-    '<button class="onglet" data-onglet="' + o.id + '" aria-current="' + (o.id === onglet) + '">' +
-      svg(I[o.id]) + '<span>' + o.nom + '</span>' +
-      (c[o.id] ? '<span class="compte">' + c[o.id] + '</span>' : '') +
-    '</button>').join("");
+  $("#nav").innerHTML =
+    ONGLETS.map(o => bouton(o.id, o.nom, I[o.id], c[o.id])).join("") +
+    etat.listes.map(l => bouton("liste:" + l.id, l.nom, I.liste, c["liste:" + l.id])).join("") +
+    '<button class="onglet ajout-liste" data-a="liste-neuve">' + svg(I.plus) + '<span>Nouvelle liste</span></button>';
+  $("#nav-pied").innerHTML = bouton("reglages", "Réglages", I.reglages, 0);
 }
 
 /* ============================================================== TÂCHES */
@@ -625,7 +705,7 @@ function ligneAchat(a){
       '<input class="champ" name="lien" type="url" style="flex:0 1 170px" placeholder="https://" value="' + esc(a.lien || "") + '">' +
       '<input class="champ mono" name="prix" style="flex:0 1 90px" inputmode="decimal" placeholder="€" value="' + (a.prix == null ? "" : a.prix) + '">' +
       '<select class="champ" name="priorite" style="flex:0 1 130px">' +
-        Object.keys(PRIORITES).map(p => '<option value="' + p + '"' + (a.priorite === p ? " selected" : "") + '>' + PRIORITES[p] + '</option>').join("") +
+        etat.priorites.map(p => '<option value="' + p.cle + '"' + (a.priorite === p.cle ? " selected" : "") + '>' + esc(p.nom) + '</option>').join("") +
       '</select>' +
       '<button class="btn btn-plein" type="submit">OK</button>' +
       '<button class="btn" type="button" data-a="annuler">Annuler</button></form>';
@@ -635,7 +715,7 @@ function ligneAchat(a){
       ' aria-label="Marquer ' + esc(a.texte) + ' comme acheté">' +
     '<div class="corps"><span class="titre">' + esc(a.texte) + '</span>' +
       '<span class="meta">' +
-        (a.priorite && a.priorite !== "normale" ? '<span class="puce' + (a.priorite === "haute" ? " rouille" : "") + '">' + PRIORITES[a.priorite] + '</span>' : '') +
+        (a.priorite && a.priorite !== "normale" ? '<span class="puce' + (a.priorite === "haute" ? " rouille" : " contour") + '">' + esc(nomPriorite(a.priorite)) + '</span>' : '') +
         (a.lien ? '<a href="' + esc(a.lien) + '" target="_blank" rel="noopener noreferrer">Voir la référence</a>' : '') +
       '</span>' +
     '</div>' +
@@ -673,7 +753,7 @@ function vueAchats(){
       '<input class="champ petit" name="lien" type="url" placeholder="Lien (facultatif)" autocomplete="off">' +
       '<input class="champ mono" name="prix" style="flex:0 1 100px" inputmode="decimal" placeholder="Prix €" autocomplete="off">' +
       '<select class="champ" name="priorite" style="flex:0 1 130px">' +
-        '<option value="normale">Normal</option><option value="haute">Prioritaire</option><option value="basse">Un jour</option>' +
+        etat.priorites.map(p => '<option value="' + p.cle + '"' + (p.cle === "normale" ? " selected" : "") + '>' + esc(p.nom) + '</option>').join("") +
       '</select>' +
       '<button class="btn btn-plein" type="submit">Ajouter</button>' +
     '</form>' +
@@ -700,7 +780,7 @@ function vueRecettes(){
     '<button class="carte-rec" data-a="recette-voir" data-id="' + x.id + '" aria-current="' + (x.id === recetteVue) + '">' +
       '<b>' + esc(x.nom) + '</b>' +
       '<span class="meta">' +
-        esc(x.categorie || "Plat") + ' · ' + (x.temps || "?") + ' min · ' + (x.portions || 1) + ' pers.' +
+        esc(x.categorie || "—") + ' · ' + (x.temps || "?") + ' min · ' + (x.portions || 1) + ' pers.' +
       '</span></button>').join("");
 
   const ingr = r.ingredients.map(i => {
@@ -717,7 +797,7 @@ function vueRecettes(){
       '<article class="fiche">' +
         '<h2>' + esc(r.nom) + '</h2>' +
         '<div class="rangee">' +
-          '<span class="puce laurier">' + esc(r.categorie || "Plat") + '</span>' +
+          '<span class="puce">' + esc(r.categorie || "—") + '</span>' +
           '<span class="puce">' + (r.temps || "?") + ' min</span>' +
           '<span class="compteur"><button data-a="portions-moins" aria-label="Moins de portions">−</button>' +
             '<span class="mono">' + p + ' portion' + (p > 1 ? "s" : "") + '</span>' +
@@ -769,7 +849,7 @@ function vueMenu(){
       '<select class="champ petit" name="jour">' + JOURS.map((j, i) =>
         '<option value="' + i + '"' + (i === auj ? " selected" : "") + '>' + j + '</option>').join("") + '</select>' +
       '<select class="champ" name="moment" style="flex:0 1 100px">' +
-        MOMENTS.map(m => '<option>' + m + '</option>').join("") + '</select>' +
+        options(OPT("moments")) + '</select>' +
       '<input class="champ mono" name="portions" style="flex:0 1 90px" type="number" min="1" step="1" value="2" aria-label="Portions">' +
       '<button class="btn btn-plein" type="submit">Planifier</button>' +
     '</form>' +
@@ -845,15 +925,190 @@ function vueCourses(){
                  : '<p class="vide">Rien à acheter : aucun repas planifié et aucun extra.</p>');
 }
 
-/* =============================================================== rendu */
-const VUES = {taches:vueTaches, achats:vueAchats, recettes:vueRecettes, menu:vueMenu, courses:vueCourses};
-function rendre(){
-  rendreNav();
-  for (const o of ONGLETS) {
-    const n = $("#vue-" + o.id);
-    n.hidden = o.id !== onglet;
-    if (o.id === onglet) n.innerHTML = VUES[o.id]();
+/* ====================================================== LISTES SUR MESURE */
+function vueListe(id){
+  const l = etat.listes.find(x => x.id === id);
+  if (!l) return '<p class="vide">Cette liste n\'existe plus.</p>';
+  const actifs = l.items.filter(i => !i.fait), faits = l.items.filter(i => i.fait);
+
+  const ligne = (i) => {
+    if (edition && edition.type === "liste-item" && edition.id === i.id)
+      return '<form class="ligne" data-form="liste-item-edit" data-id="' + l.id + '" data-item="' + i.id + '">' +
+        '<input class="champ" name="texte" value="' + esc(i.texte) + '" autofocus>' +
+        '<button class="btn btn-plein" type="submit">OK</button>' +
+        '<button class="btn" type="button" data-a="annuler">Annuler</button></form>';
+    return '<div class="ligne' + (i.fait ? " finie" : "") + '">' +
+      '<input type="checkbox" data-a="liste-item-fait" data-id="' + l.id + '" data-item="' + i.id + '"' +
+        (i.fait ? " checked" : "") + ' aria-label="' + esc(i.texte) + '">' +
+      '<div class="corps"><span class="titre">' + esc(i.texte) + '</span></div>' +
+      '<div class="actions">' +
+        '<button class="btn-nu" data-a="liste-item-edit" data-id="' + l.id + '" data-item="' + i.id + '" title="Modifier">' + svg(I.crayon) + '</button>' +
+        '<button class="btn-nu danger" data-a="liste-item-suppr" data-id="' + l.id + '" data-item="' + i.id + '" title="Supprimer">' + svg(I.poubelle) + '</button>' +
+      '</div></div>';
+  };
+
+  const tete = (edition && edition.type === "liste-nom" && edition.id === l.id)
+    ? '<form class="tete" data-form="liste-nom" data-id="' + l.id + '" style="align-items:center; gap:8px">' +
+        '<input class="champ" name="nom" value="' + esc(l.nom) + '" autofocus style="max-width:340px">' +
+        '<button class="btn btn-plein" type="submit">OK</button>' +
+        '<button class="btn" type="button" data-a="annuler">Annuler</button></form>'
+    : '<div class="tete"><div><h1>' + esc(l.nom) + '</h1>' +
+        '<p>' + (actifs.length ? actifs.length + " élément" + (actifs.length > 1 ? "s" : "") : "Liste vide") + '</p></div>' +
+        '<div class="droite">' +
+          '<button class="btn" data-a="liste-renommer" data-id="' + l.id + '">Renommer</button>' +
+          '<button class="btn btn-danger" data-a="liste-suppr" data-id="' + l.id + '">Supprimer</button>' +
+        '</div></div>';
+
+  return tete +
+    '<form class="ajout" data-form="liste-item-ajout" data-id="' + l.id + '">' +
+      '<input class="champ grand" name="texte" placeholder="Ajouter un élément…" required autocomplete="off">' +
+      '<button class="btn btn-plein" type="submit">Ajouter</button></form>' +
+    (actifs.length ? '<div class="pile">' + actifs.map(ligne).join("") + '</div>'
+                   : '<p class="vide">Rien dans cette liste pour l\'instant.</p>') +
+    (faits.length ? '<details class="fini"><summary>' + faits.length + ' terminé' + (faits.length > 1 ? "s" : "") + '</summary>' +
+      '<div class="pile" style="margin-top:8px">' + faits.map(ligne).join("") + '</div>' +
+      '<button class="btn" style="margin-top:10px" data-a="liste-purge" data-id="' + l.id + '">Effacer les terminés</button></details>' : "");
+}
+
+/* =============================================================== RÉGLAGES */
+function ligneOption(cle, valeur, i, n){
+  if (edition && edition.type === "option" && edition.cle === cle && edition.valeur === valeur)
+    return '<form class="opt-ligne" data-form="option-renommer" data-cle="' + cle + '" data-valeur="' + esc(valeur) + '">' +
+      '<input class="champ" name="valeur" value="' + esc(valeur) + '" autofocus>' +
+      '<button class="btn btn-plein" type="submit">OK</button>' +
+      '<button class="btn" type="button" data-a="annuler">Annuler</button></form>';
+  const employe = USAGES[cle].compter(valeur);
+  return '<div class="opt-ligne">' +
+    '<span class="fleches">' +
+      '<button class="btn-nu" data-a="option-monter" data-cle="' + cle + '" data-i="' + i + '"' +
+        (i === 0 ? " disabled" : "") + ' aria-label="Monter ' + esc(valeur) + '">' + svg(I.haut) + '</button>' +
+      '<button class="btn-nu" data-a="option-descendre" data-cle="' + cle + '" data-i="' + i + '"' +
+        (i === n - 1 ? " disabled" : "") + ' aria-label="Descendre ' + esc(valeur) + '">' + svg(I.bas) + '</button>' +
+    '</span>' +
+    '<span class="nom">' + esc(valeur) + '</span>' +
+    (employe ? '<span class="puce contour" title="Employé ' + employe + ' fois">' + employe + '</span>' : '') +
+    '<button class="btn-nu" data-a="option-renommer" data-cle="' + cle + '" data-valeur="' + esc(valeur) + '" aria-label="Renommer ' + esc(valeur) + '">' + svg(I.crayon) + '</button>' +
+    '<button class="btn-nu danger" data-a="option-suppr" data-cle="' + cle + '" data-valeur="' + esc(valeur) + '" aria-label="Supprimer ' + esc(valeur) + '">' + svg(I.poubelle) + '</button>' +
+  '</div>';
+}
+
+function blocOptions(cle){
+  const u = USAGES[cle], l = OPT(cle);
+  return '<section class="bloc" data-bloc="' + cle + '"><h2>' + u.titre + '</h2><p class="aide">' + u.aide + '</p>' +
+    '<div class="pile">' + l.map((v, i) => ligneOption(cle, v, i, l.length)).join("") + '</div>' +
+    '<form class="ajout" data-form="option-ajout" data-cle="' + cle + '">' +
+      '<input class="champ grand" name="valeur" placeholder="Ajouter…" required autocomplete="off">' +
+      '<button class="btn" type="submit">Ajouter</button></form></section>';
+}
+
+function vueReglages(){
+  let theme = "systeme";
+  try { theme = localStorage.getItem(CLE_THEME) || "systeme"; } catch (e) {}
+  const msg = flash;
+
+  return '<div class="tete"><div><h1>Réglages</h1>' +
+      '<p>Tout ce que l\'application te propose ailleurs se règle ici. Rien à modifier dans le code.</p></div></div>' +
+    (msg ? '<p class="alerte' + (msg.err ? " err" : "") + '">' + esc(msg.t) + '</p>' : '') +
+    '<div class="reglages">' +
+
+      '<section class="bloc" data-bloc="listes"><h2>Mes listes</h2>' +
+        '<p class="aide">Des listes à cocher en plus des cinq sections : films, cadeaux, voyage, ce que tu veux.</p>' +
+        (etat.listes.length
+          ? '<div class="pile">' + etat.listes.map(l =>
+              '<div class="opt-ligne"><span class="nom">' + esc(l.nom) + '</span>' +
+              '<span class="puce contour">' + l.items.length + '</span>' +
+              '<button class="btn-nu" data-a="liste-ouvrir" data-id="' + l.id + '" aria-label="Ouvrir ' + esc(l.nom) + '">' + svg(I.liste) + '</button>' +
+              '<button class="btn-nu danger" data-a="liste-suppr" data-id="' + l.id + '" aria-label="Supprimer ' + esc(l.nom) + '">' + svg(I.poubelle) + '</button>' +
+              '</div>').join("") + '</div>'
+          : '<p class="vide" style="padding:18px">Aucune liste pour l\'instant.</p>') +
+        '<form class="ajout" data-form="liste-ajout">' +
+          '<input class="champ grand" name="nom" placeholder="Nom de la nouvelle liste" required autocomplete="off">' +
+          '<button class="btn" type="submit">Créer</button></form></section>' +
+
+      blocOptions("rayons") + blocOptions("moments") +
+      blocOptions("categoriesRecette") + blocOptions("unites") +
+
+      '<section class="bloc" data-bloc="priorites"><h2>Priorités d\'achat</h2>' +
+        '<p class="aide">Trois niveaux, dont tu choisis les mots.</p>' +
+        '<div class="pile">' + etat.priorites.map(pr =>
+          '<form class="opt-ligne" data-form="priorite" data-cle="' + pr.cle + '">' +
+            '<input class="champ" name="nom" value="' + esc(pr.nom) + '" aria-label="Nom du niveau ' + pr.cle + '">' +
+            '<button class="btn" type="submit">Renommer</button></form>').join("") + '</div></section>' +
+
+      '<section class="bloc" data-bloc="apparence"><h2>Apparence</h2>' +
+        '<p class="aide">Par défaut, l\'application suit le thème de ton système.</p>' +
+        '<select class="champ" data-a="theme" style="max-width:260px" aria-label="Thème">' +
+          ["systeme:Suivre le système", "light:Clair", "dark:Sombre"].map(o => {
+            const [v, t] = o.split(":");
+            return '<option value="' + v + '"' + (theme === v ? " selected" : "") + '>' + t + '</option>';
+          }).join("") + '</select></section>' +
+
+      '<section class="bloc" data-bloc="donnees"><h2>Mes données</h2>' +
+        '<p class="aide">' + (api
+          ? "Enregistrées dans cette page : elles te suivent d'un appareil à l'autre."
+          : "Enregistrées dans ce navigateur uniquement. Exporte-les de temps en temps.") + '</p>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap">' +
+          '<button class="btn" data-a="exporter">Exporter en JSON</button>' +
+          '<button class="btn" data-a="importer">Importer un fichier</button>' +
+          '<input type="file" accept="application/json,.json" id="fichier-import" hidden>' +
+          '<button class="btn btn-danger" data-a="tout-effacer">Tout effacer</button>' +
+        '</div>' +
+        '<p id="msg-reglages" style="margin:12px 0 0; font-size:13px; min-height:1.2em"></p></section>' +
+    '</div>';
+}
+
+/* ------------------------------------------- opérations sur les options */
+function dire(t, err){ flash = {t, err: !!err}; }
+
+function renommerOption(cle, avant, apres){
+  apres = String(apres).trim();
+  edition = null;
+  if (!apres || apres === avant) { rendre(); return; }
+  if (OPT(cle).includes(apres)) { dire('« ' + apres + ' » existe déjà dans cette liste.', true); rendre(); return; }
+  modifier(() => {
+    etat.options[cle] = OPT(cle).map(v => (v === avant ? apres : v));
+    USAGES[cle].renommer(avant, apres);
+  });
+}
+
+function supprimerOption(cle, valeur){
+  const l = OPT(cle);
+  if (l.length <= 1) { dire("Il faut garder au moins une valeur dans cette liste.", true); rendre(); return; }
+  const employe = USAGES[cle].compter(valeur);
+  const reste = l.filter(v => v !== valeur);
+  const repli = reste[reste.length - 1];
+  if (employe) {
+    const question = USAGES[cle].libre
+      ? '« ' + valeur + ' » est employé ' + employe + ' fois. Ce qui l\'utilise le garde ; il ne sera simplement plus suggéré. Continuer ?'
+      : '« ' + valeur + ' » est employé ' + employe + ' fois. Ces éléments passeront à « ' + repli + ' ». Continuer ?';
+    if (!confirm(question)) return;
   }
+  modifier(() => {
+    etat.options[cle] = reste;
+    if (employe && !USAGES[cle].libre) USAGES[cle].renommer(valeur, repli);
+  });
+}
+
+function deplacerOption(cle, i, pas){
+  const l = OPT(cle), j = i + pas;
+  if (j < 0 || j >= l.length) return;
+  modifier(() => { const c = l.slice(); [c[i], c[j]] = [c[j], c[i]]; etat.options[cle] = c; });
+}
+
+/* =============================================================== rendu */
+const VUES = {taches:vueTaches, achats:vueAchats, recettes:vueRecettes, menu:vueMenu,
+              courses:vueCourses, reglages:vueReglages};
+function ongletValide(o){
+  if (VUES[o]) return true;
+  return o.startsWith("liste:") && etat.listes.some(l => "liste:" + l.id === o);
+}
+function rendre(){
+  if (!ongletValide(onglet)) onglet = "taches";
+  rendreNav();
+  $("#unites").innerHTML = OPT("unites").map(u => '<option value="' + esc(u) + '"></option>').join("");
+  const corps = onglet.startsWith("liste:") ? vueListe(onglet.slice(6)) : VUES[onglet]();
+  flash = null;
+  $("main").innerHTML = '<section class="vue" id="vue-' + onglet.replace(/[^a-z0-9]+/gi, "-") + '">' + corps + '</section>';
   const cible = focusCible ? $(focusCible) : $("[autofocus]");
   focusCible = null;
   if (cible) cible.focus();
@@ -885,7 +1140,7 @@ function ouvrirRecette(id){
           '<label class="lab"><span>Portions</span><input class="champ mono" name="portions" type="number" min="1" step="1" value="' + (r ? r.portions : 2) + '"></label>' +
           '<label class="lab"><span>Minutes</span><input class="champ mono" name="temps" type="number" min="1" step="1" value="' + (r ? (r.temps || 30) : 30) + '"></label>' +
           '<label class="lab"><span>Catégorie</span><select class="champ" name="categorie">' +
-            CATEGORIES.map(c => '<option' + (r && r.categorie === c ? " selected" : "") + '>' + c + '</option>').join("") +
+            options(OPT("categoriesRecette"), r ? r.categorie : OPT("categoriesRecette")[0]) +
           '</select></label>' +
         '</div>' +
         '<div><span class="lab" style="display:block; margin-bottom:7px"><span>Ingrédients</span></span>' +
@@ -918,44 +1173,13 @@ function ouvrirPlanif(id){
           JOURS.map((j, i) => '<option value="' + i + '"' + (i === auj ? " selected" : "") + '>' + j + '</option>').join("") +
         '</select></label>' +
         '<label class="lab"><span>Repas</span><select class="champ" name="moment">' +
-          MOMENTS.map(m => '<option' + (m === "Soir" ? " selected" : "") + '>' + m + '</option>').join("") + '</select></label>' +
+          options(OPT("moments"), OPT("moments").includes("Soir") ? "Soir" : OPT("moments")[0]) + '</select></label>' +
         '<label class="lab"><span>Portions</span><input class="champ mono" name="portions" type="number" min="1" step="1" value="' +
           (portionsVue || r.portions || 2) + '"></label>' +
       '</div></div>' +
       '<div class="dlg-pied"><button class="btn" type="button" data-a="fermer">Annuler</button>' +
         '<button class="btn btn-plein" type="submit">Planifier</button></div>' +
     '</form>';
-  dlg.showModal();
-}
-
-function ouvrirReglages(){
-  let theme = "systeme";
-  try { theme = localStorage.getItem(CLE_THEME) || "systeme"; } catch (e) {}
-  const dlg = $("#dlg-reglages");
-  dlg.innerHTML =
-    '<div class="dlg-tete"><h2>Réglages</h2>' +
-      '<button class="btn-nu" type="button" data-a="fermer" aria-label="Fermer">✕</button></div>' +
-    '<div class="dlg-corps">' +
-      '<label class="lab"><span>Apparence</span><select class="champ" data-a="theme">' +
-        ['systeme:Suivre le système', 'light:Clair', 'dark:Sombre'].map(o => {
-          const [v, t] = o.split(":");
-          return '<option value="' + v + '"' + (theme === v ? " selected" : "") + '>' + t + '</option>';
-        }).join("") + '</select></label>' +
-      '<div><span class="lab" style="display:block; margin-bottom:7px"><span>Mes données</span></span>' +
-        '<p style="margin:0 0 10px; color:hsl(var(--muted-foreground)); font-size:14px">' +
-          (api ? "Enregistrées dans cette page : elles te suivent d\'un appareil à l\'autre."
-               : "Enregistrées dans ce navigateur uniquement. Exporte-les de temps en temps.") + '</p>' +
-        '<div style="display:flex; gap:8px; flex-wrap:wrap">' +
-          '<button class="btn" data-a="exporter">Exporter en JSON</button>' +
-          '<button class="btn" data-a="importer">Importer un fichier</button>' +
-          '<input type="file" accept="application/json,.json" id="fichier-import" hidden>' +
-        '</div>' +
-        '<p id="msg-reglages" style="margin:10px 0 0; font-size:13px; color:hsl(var(--muted-foreground)); min-height:1.2em"></p>' +
-      '</div>' +
-      '<div><span class="lab" style="display:block; margin-bottom:7px"><span>Repartir de zéro</span></span>' +
-        '<button class="btn btn-danger" data-a="tout-effacer">Effacer toutes mes données</button></div>' +
-    '</div>' +
-    '<div class="dlg-pied"><button class="btn btn-plein" type="button" data-a="fermer">Fermer</button></div>';
   dlg.showModal();
 }
 
@@ -1011,7 +1235,7 @@ document.addEventListener("click", (ev) => {
     if (d && ev.target === d) d.close();
     return;
   }
-  const a = el.dataset.a, id = el.dataset.id;
+  const a = el.dataset.a, id = el.dataset.id, cle = el.dataset.cle;
 
   if (a === "fermer") { el.closest("dialog").close(); return; }
   if (a === "annuler") { edition = null; rendre(); return; }
@@ -1085,8 +1309,42 @@ document.addEventListener("click", (ev) => {
       else liste.innerHTML = ligneIngForm();
       break;
     }
+    /* listes sur mesure */
+    case "liste-neuve": {
+      const nid = uid();
+      modifier(e => e.listes.push({id:nid, nom:"Nouvelle liste", items:[]}));
+      onglet = "liste:" + nid;
+      edition = {type:"liste-nom", id:nid};
+      rendre();
+      break;
+    }
+    case "liste-ouvrir": onglet = "liste:" + id; edition = null; rendre(); break;
+    case "liste-renommer": edition = {type:"liste-nom", id}; rendre(); break;
+    case "liste-suppr": {
+      const l = etat.listes.find(x => x.id === id);
+      if (!l || !confirm('Supprimer la liste « ' + l.nom + ' » et ses ' + l.items.length + ' éléments ?')) break;
+      modifier(e => { e.listes = e.listes.filter(x => x.id !== id); });
+      if (onglet === "liste:" + id) onglet = "taches";
+      rendre();
+      break;
+    }
+    case "liste-purge":
+      modifier(e => { const l = e.listes.find(x => x.id === id); if (l) l.items = l.items.filter(i => !i.fait); });
+      break;
+    case "liste-item-fait":
+      modifier(e => { const l = e.listes.find(x => x.id === id); if (!l) return;
+        const it = l.items.find(x => x.id === el.dataset.item); if (it) it.fait = !it.fait; });
+      break;
+    case "liste-item-edit": edition = {type:"liste-item", id: el.dataset.item}; rendre(); break;
+    case "liste-item-suppr":
+      modifier(e => { const l = e.listes.find(x => x.id === id); if (l) l.items = l.items.filter(i => i.id !== el.dataset.item); });
+      break;
+    /* listes d'options */
+    case "option-monter":    deplacerOption(cle, Number(el.dataset.i), -1); break;
+    case "option-descendre": deplacerOption(cle, Number(el.dataset.i), 1); break;
+    case "option-renommer":  edition = {type:"option", cle, valeur: el.dataset.valeur}; rendre(); break;
+    case "option-suppr":     supprimerOption(cle, el.dataset.valeur); break;
     /* réglages */
-    case "reglages": ouvrirReglages(); break;
     case "exporter": exporter(); break;
     case "importer": $("#fichier-import").click(); break;
     case "tout-effacer":
@@ -1193,6 +1451,50 @@ document.addEventListener("submit", (ev) => {
         recetteId:d.recetteId, portions:Math.max(1, Number(d.portions) || 1), fait:false}));
       break;
 
+    case "liste-ajout": {
+      const nom = String(d.nom).trim();
+      if (!nom) return;
+      const nid = uid();
+      modifier(e => e.listes.push({id:nid, nom, items:[]}));
+      focusCible = '[data-form="liste-ajout"] [name="nom"]';
+      rendre();
+      break;
+    }
+    case "liste-nom":
+      edition = null;
+      modifier(e => { const l = e.listes.find(x => x.id === id); if (l && String(d.nom).trim()) l.nom = String(d.nom).trim(); });
+      break;
+    case "liste-item-ajout":
+      if (!String(d.texte).trim()) return;
+      modifier(e => { const l = e.listes.find(x => x.id === id);
+        if (l) l.items.push({id:uid(), texte:String(d.texte).trim(), fait:false}); });
+      focusCible = '[data-form="liste-item-ajout"] [name="texte"]';
+      rendre();
+      break;
+    case "liste-item-edit":
+      edition = null;
+      modifier(e => { const l = e.listes.find(x => x.id === id); if (!l) return;
+        const it = l.items.find(x => x.id === f.dataset.item);
+        if (it && String(d.texte).trim()) it.texte = String(d.texte).trim(); });
+      break;
+    case "option-ajout": {
+      const v = String(d.valeur).trim(), k = f.dataset.cle;
+      if (!v) return;
+      if (OPT(k).includes(v)) { dire('« ' + v + ' » est déjà dans cette liste.', true); rendre(); return; }
+      modifier(() => etat.options[k].push(v));
+      focusCible = '[data-form="option-ajout"][data-cle="' + k + '"] [name="valeur"]';
+      rendre();
+      break;
+    }
+    case "option-renommer":
+      renommerOption(f.dataset.cle, f.dataset.valeur, d.valeur);
+      break;
+    case "priorite": {
+      const nom = String(d.nom).trim(), k = f.dataset.cle;
+      if (!nom) return;
+      modifier(e => { const pr = e.priorites.find(x => x.cle === k); if (pr) pr.nom = nom; });
+      break;
+    }
     case "extra-ajout":
       if (!String(d.texte).trim()) return;
       modifier(e => e.extras.push({id:uid(), texte:String(d.texte).trim(), rayon:d.rayon, fait:false}));

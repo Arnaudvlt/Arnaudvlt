@@ -14,6 +14,19 @@ l'échelle, additionnées entre recettes, regroupées par rayon. Un repas coché
 sort. Les unités incompatibles ne sont jamais additionnées ; un article sans unité s'arrondit
 au supérieur (on n'achète pas 3,5 oignons).
 
+## Tout est paramétrable depuis l'interface
+
+Rien ne demande de toucher au code. L'écran **Réglages** permet d'ajouter, renommer, réordonner
+et supprimer les rayons (leur ordre est celui de la liste de courses), les moments de repas, les
+catégories de recettes, les unités suggérées et les noms des trois niveaux de priorité. Chaque
+valeur affiche combien de fois elle est employée ; un renommage se propage aux données
+existantes, et une suppression réaffecte ce qui l'utilisait après confirmation.
+
+On peut aussi créer ses propres **listes à cocher** depuis le rail, en plus des cinq sections.
+
+Une version de graine (`graine` dans l'état) permet de livrer du contenu nouveau sur un état
+déjà enregistré : les éléments sont ajoutés par id sans écraser les saisies.
+
 ## Interface
 
 Système de design **shadcn/ui**, écrit en CSS — c'est son mode de distribution : on copie le
@@ -44,10 +57,17 @@ Hors plateforme (fichier ouvert en local), la capacité n'existe pas : l'app bas
 NODE_PATH=/opt/node22/lib/node_modules node intendance/test-ui.mjs
 ```
 
-56 vérifications dans Chromium via Playwright : parcours complet (ajout, édition en ligne,
+76 vérifications dans Chromium via Playwright : parcours complet (ajout, édition en ligne,
 regroupement par échéance, tri des achats, mise à l'échelle des portions, agrégation des
 courses, création de recette, persistance après rechargement), regroupement des achats par
 catégorie, migration de graine sur un état déjà enregistré, contrastes mesurés en thème sombre
 (ratios calculés, pas de couleur codée en dur), absence de débordement horizontal en 390 px et
 absence d'erreur JavaScript. Le script écrit aussi
 `apercu-clair.png` et `apercu-sombre.png`.
+
+## Prompt de référence
+
+`PROMPT.md` est la spécification complète et autonome du projet — contexte, comportements
+attendus, modèle de données, persistance, système de design, contraintes et exigences de
+qualité. Elle se colle telle quelle dans une nouvelle session pour reprendre le travail sans
+connaître l'historique.
